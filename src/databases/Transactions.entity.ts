@@ -30,6 +30,9 @@ export class Transactions {
   @Column()
   type: string;
 
+  @Column()
+  fee: string;
+
   @ManyToOne(() => Blocks, (blocks: Blocks) => blocks.tx)
   @JoinColumn({ name: 'blockIndex' })
   blockIndex: Blocks;
