@@ -24,8 +24,17 @@ export class Event {
   @Column({ name: 'from' })
   from: string;
 
-  @Column({ name: 'to' })
+  @Column({ name: 'to', nullable: true })
   to: string;
+
+  @Column({ name: 'value', nullable: true })
+  value: string;
+
+  @Column({ name: 'weight' })
+  weight: string;
+
+  @Column({ name: 'log' })
+  log: string;
 
   @ManyToOne(() => Extrinsic, (extrinsic: Extrinsic) => extrinsic.event, {
     eager: true,
