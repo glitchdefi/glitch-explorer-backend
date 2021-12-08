@@ -6,8 +6,8 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { Log } from 'src/databases/Log.entity';
-import { Extrinsic } from 'src/databases/Extrinsic.entity';
+import { Log } from './Log.entity';
+import { Extrinsic } from './Extrinsic.entity';
 
 @Entity({ name: 'block' })
 export class Block {
@@ -27,7 +27,7 @@ export class Block {
   epoch: number;
 
   @Column({ name: 'weight' })
-  weight: number;
+  weight: string;
 
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;

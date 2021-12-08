@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Block } from 'src/databases/Block.entity';
+import { Block } from './Block.entity';
 
 @Entity({ name: 'log' })
 export class Log {

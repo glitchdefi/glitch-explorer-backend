@@ -6,9 +6,9 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { Transaction } from 'src/databases/Transaction.entity';
-import { Event } from 'src/databases/Event.entity';
-import { Block } from 'src/databases/Block.entity';
+import { Transaction } from './Transaction.entity';
+import { Event } from './Event.entity';
+import { Block } from './Block.entity';
 
 @Entity({ name: 'extrinsic' })
 export class Extrinsic {

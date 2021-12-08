@@ -5,7 +5,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Extrinsic } from 'src/databases/Extrinsic.entity';
+import { Extrinsic } from './Extrinsic.entity';
 
 @Entity({ name: 'transaction' })
 export class Transaction {
