@@ -7,7 +7,7 @@ import { Address } from '../src/databases/Address.entity';
 import { Event } from '../src/databases/Event.entity';
 import { Extrinsic } from '../src/databases/Extrinsic.entity';
 import { BalanceHistory } from '../src/databases/BalanceHistory.entity';
-
+require('dotenv').config()
 const connect = async (): Promise<void> => {
   await createConnections([{
     name: 'postgres',

@@ -1,5 +1,7 @@
-import { getManager } from "typeorm";
-import {Block} from "../src/databases/Block.entity";
+import { getManager, getConnection } from "typeorm";
+import { Block } from "../src/databases/Block.entity";
+import { Transaction } from '../src/databases/Transaction.entity'
+import { Extrinsic } from '../src/databases/Extrinsic.entity'
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { HeaderExtended } from '@polkadot/api-derive/types';
 import { formatNumber, isFunction } from '@polkadot/util';
@@ -32,6 +34,7 @@ export interface HeaderExtendedWithMapping extends HeaderExtended {
 class FetchBlock {
   api: any;
   entityManager: any;
+  connection: any;
   byAuthor: Record<string, string> = {};
   eraPoints: Record<string, string> = {};
   lastHeaders: HeaderExtendedWithMapping[] = [];
@@ -44,6 +47,7 @@ class FetchBlock {
     const api = this.api;
     const entityManager = getManager('postgres');
     this.entityManager = entityManager
+    this.connection = getConnection('postgres')
     // const [
     //   systemChain,
     //   systemChainType,
@@ -215,8 +219,7 @@ class FetchBlock {
       // )
 
       // get weight
-      const events = await api.query.system.events.at(blockHash);
-      const [deposits, transfers, weight] = this.extractEventDetails(events);
+      const [deposits, transfers, weight] = this.extractEventDetails( await api.query.system.events.at(blockHash));
       // extract extrinsic
       // signedBlock.block.extrinsics.forEach(async (ex, index) => {
       //   if (api.rpc.payment.queryFeeDetails) {
@@ -242,22 +245,107 @@ class FetchBlock {
       let era = Math.floor(epoch/(api.consts.staking.sessionsPerEra).toNumber())
       let time = Number(await api.query.timestamp.now.at(lastHeader.hash))
       
-      const blockData = {
-        index: blockNumber.toNumber(),
-        hash: lastHeader.hash.toHex(),
-        parentHash: lastHeader.parentHash.toHex(),
-        validator: thisBlockAuthor,
-        epoch: epoch,
-        weight: weight.toString(),
-        time: new Date(time),
-        reward: '0',
-        extrinsicHash: lastHeader.extrinsicsRoot.toHex(),
-        eraIndex: era,
-        // extrinsic: "",
-        // logs: []
-      };
-      this._debug('blockData', blockData);
-      const block = await this.entityManager.insert(Block, blockData)
+
+      
+      const allRecords = await api.query.system.events.at(signedBlock.block.header.hash);
+      // map between the extrinsics and events
+      let transactions = []
+      let events = []
+      const extrinsic = new Extrinsic()
+      extrinsic.hash = lastHeader.extrinsicsRoot.toHex()
+      await this.connection.manager.save(extrinsic)
+      console.log('extrinsic', extrinsic.id)
+      const block = new Block()
+      block.index = blockNumber.toNumber()
+      block.hash = lastHeader.hash.toHex()
+      block.parentHash = lastHeader.parentHash.toHex()
+      block.validator = thisBlockAuthor
+      block.epoch = epoch
+      block.weight = weight.toString()
+      block.time = new Date(time)
+      block.reward = '0'
+      block.extrinsicHash = lastHeader.extrinsicsRoot.toHex()
+      block.eraIndex = era,
+      block.txNum = 0
+      block.extrinsic = extrinsic
+      await this.connection.manager.save(block)
+
+      signedBlock.block.extrinsics.forEach(async (ex, index) => {
+        // console.log(JSON.stringify(ex.toHuman()))
+        const { method: {method, section, args: {dest} }, signer, hash, nonce, tip, ...any } = ex
+        allRecords
+          .filter(({ phase }) =>
+            phase.isApplyExtrinsic &&
+            phase.asApplyExtrinsic.eq(index)
+          )
+          .forEach(async ({ event }) => {
+            if (api.events.system.ExtrinsicSuccess.is(event)) {
+              const [dispatchInfo] = event.data;
+              const args = ex.method.args
+              // console.log(`${section}.${method}:: ExtrinsicSuccess:: ${JSON.stringify(dispatchInfo.toHuman())} ${JSON.stringify(event)}`);
+              let eventData = {
+                name: `${section}.${method}`,
+                hash: "",
+                source: "",
+                from: "",
+                to: "",
+                value: "",
+                weight: "",
+                log: ""
+              }
+              events.push(eventData)
+              // extract transfer
+              if (section === 'balances') {
+                if (method === 'transfer' || method === 'transferKeepAlive') {
+                  let transactionData = {
+                    hash: ex.hash.toHex(),
+                    from: signer.toString(),
+                    to: args[0].toString(),
+                    value: args[1].toString(),
+                    weight: dispatchInfo.weight.toString(),
+                    fee: "",
+                    type: method,
+                    time: new Date(time),
+                    extrinsicIndex: extrinsic.id
+                  }
+                  let transaction = await this.entityManager.insert(Transaction, transactionData)
+                  transactions.push(transactionData)
+                }
+              }
+              
+            } else if (api.events.system.ExtrinsicFailed.is(event)) {
+              const [dispatchError, dispatchInfo] = event.data;
+              let errorInfo;
+      
+              if (dispatchError.isModule) {
+                const decoded = api.registry.findMetaError(dispatchError.asModule);
+      
+                errorInfo = `${decoded.section}.${decoded.name}`;
+              } else {
+                errorInfo = dispatchError.toString();
+              }
+      
+              console.log(`${section}.${method}:: ExtrinsicFailed:: ${errorInfo}`);
+              let eventData = {
+                name: `${section}.${method}`,
+                hash: "",
+                source: "",
+                from: "",
+                to: "",
+                value: "",
+                weight: "",
+                log: ""
+              }
+              events.push(eventData)
+            }
+          });
+      });
+      
+
+      block.txNum = transactions.length
+      await this.connection.manager.save(block)
+     
+
     }
 
     console.log('--------');

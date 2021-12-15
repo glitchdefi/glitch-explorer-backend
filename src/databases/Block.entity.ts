@@ -46,4 +46,7 @@ export class Block {
 
   @OneToMany(() => Log, (log: Log) => log.blockIndex)
   logs?: Log[];
+
+  @Column({ name: 'tx_num' })
+  txNum: number;
 }
