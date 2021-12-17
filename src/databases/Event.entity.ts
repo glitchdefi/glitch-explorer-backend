@@ -21,7 +21,7 @@ export class Event {
   @Column({ name: 'source' })
   source: string;
 
-  @Column({ name: 'from' })
+  @Column({ name: 'from', nullable: true  })
   from: string;
 
   @Column({ name: 'to', nullable: true })

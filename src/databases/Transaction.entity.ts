@@ -33,6 +33,9 @@ export class Transaction {
   @Column({ name: 'fee' })
   fee: string;
 
+  @Column({ name: 'tip' })
+  tip: string;
+
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
 
