@@ -302,11 +302,15 @@ class FetchBlock {
             let errorInfo;
 
             if (dispatchError.isModule) {
-              const decoded = api.registry.findMetaError(
-                dispatchError.asModule,
-              );
-
-              errorInfo = `${decoded.section}.${decoded.name}`;
+              try {
+                const decoded = api.registry.findMetaError(
+                  dispatchError.asModule,
+                );
+  
+                errorInfo = `${decoded.section}.${decoded.name}`;
+              } catch (error) {
+                console.log(error)
+              }
               
             } else {
               errorInfo = dispatchError.toString();
@@ -445,8 +449,8 @@ class FetchBlock {
     } catch (error) {
       fs.appendFileSync('fetch_failed.log', `${new Date()}\height:${height}\treason:${error.message}\n`)
       console.log(`fetchBlock ${height} Error: ${error.message}`);
-      await this.wait(1000);
-      return this.fetchBlock(height);
+      // await this.wait(1000);
+      // return this.fetchBlock(height);
     }
   }
 }
