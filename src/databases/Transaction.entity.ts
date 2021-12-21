@@ -36,6 +36,9 @@ export class Transaction {
   @Column({ name: 'tip' })
   tip: string;
 
+  @Column({ name: 'status', default: "success" })
+  status: string;
+
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
 

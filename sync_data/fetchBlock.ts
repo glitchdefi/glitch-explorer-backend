@@ -288,6 +288,7 @@ class FetchBlock {
                   time: new Date(time),
                   tip: ex.tip.toNumber(),
                   extrinsicIndex: extrinsic.id,
+                  status: "success"
                 };
                 let transaction = await this.entityManager.insert(
                   Transaction,
@@ -306,10 +307,48 @@ class FetchBlock {
               );
 
               errorInfo = `${decoded.section}.${decoded.name}`;
+              
             } else {
               errorInfo = dispatchError.toString();
+              eventEntity.log = dispatchError.toString();
             }
+            if (section === 'balances') {
+              if (method === 'transfer' || method === 'transferKeepAlive') {
+                let fee = new BN(0);
+                if (api.rpc.payment.queryFeeDetails) {
+                  const queryFeeDetails = await api.rpc.payment.queryInfo(
+                    ex.toHex(),
+                    blockHash,
+                  );
+                  if (queryFeeDetails) {
+                    fee = queryFeeDetails.partialFee;
+                  }
+                }
+                eventEntity.from = signer?.toString();
+                eventEntity.to = args && args.length ? args[0]?.toString() : '';
+                eventEntity.value =
+                  args && args.length > 1 ? args[1].toString() : '';
 
+                let transactionData = {
+                  hash: ex.hash.toHex(),
+                  from: signer?.toString(),
+                  to: args[0].toString(),
+                  value: args[1].toString(),
+                  weight: dispatchInfo.weight.toString(),
+                  fee: fee,
+                  type: method,
+                  time: new Date(time),
+                  tip: ex.tip.toNumber(),
+                  extrinsicIndex: extrinsic.id,
+                  status: "failed"
+                };
+                let transaction = await this.entityManager.insert(
+                  Transaction,
+                  transactionData,
+                );
+                txNum++;
+              }
+            }
             console.log(
               `${section}.${method}:: ExtrinsicFailed:: ${errorInfo}`,
             );
@@ -365,7 +404,7 @@ class FetchBlock {
   async fetchBlocks(): Promise<void> {
     const block = await this.entityManager.findOne(Block);
     console.log(JSON.stringify(block));
-    let from = block? block.index : 0
+    let from = 2538 //block? block.index : 0
     // fetch N block and continue
     await this._fetchBlockInterval(from);
   }
