@@ -5,8 +5,11 @@ import { keyring } from '@polkadot/ui-keyring';
 import { BN, formatNumber, isFunction } from '@polkadot/util';
 import { getConnection, getManager } from 'typeorm';
 import { Log, Block, Event, Extrinsic, Transaction } from '../src/databases';
+require('dotenv').config()
 const fs = require('fs');
-const wsProvider = new WsProvider(process.env.RPC || 'wss://rpc.polkadot.io');
+const RPC = process.env.RPC || 'wss://rpc.polkadot.io'
+console.log('RPC', RPC)
+const wsProvider = new WsProvider(RPC);
 const MAX_HEADERS = 75;
 const DEFAULT_TIME = new BN(6000);
 function isKeyringLoaded() {
@@ -415,20 +418,29 @@ class FetchBlock {
     console.log('from' ,from)
     // fetch N block and continue
     let funcs = []
-    let step = process.env.MULTI_FETCH ? parseInt(process.env.MULTI_FETCH) :  1
+    // get last block number
+    const blockHash = await this.api.rpc.chain.getBlockHash();
+
+    const lastHeader: HeaderExtendedWithMapping | undefined = await this.api.derive.chain.getHeader(blockHash);
+    if (lastHeader?.number) {
+      let last = lastHeader.number.toNumber();
+      funcs.push(this._fetchBlockInterval(last, 1, true))
+    }
+    let step = process.env.MULTI_FETCH ? parseInt(process.env.MULTI_FETCH) : 1
+    //fetch last block
     for (let i = 0; i < step; i++){
       funcs.push(this._fetchBlockInterval(from+i, step))
     }
     await Promise.all(funcs)
   }
 
-  async _fetchBlockInterval(from = 0, step=1): Promise<void> {
+  async _fetchBlockInterval(from = 0, step=1, retry=false): Promise<void> {
     try {
-      let success = await this.fetchBlock(from);
+      let success = await this.fetchBlock(from, retry);
       if (success) {
         console.log(`fetchBlock success: from ${from}`);
         from = from + step;
-        await this._fetchBlockInterval(from, step);
+        await this._fetchBlockInterval(from, step, retry);
       } else {
         
         console.log(`fetchBlock failed: from ${from}`);
@@ -438,7 +450,7 @@ class FetchBlock {
     } finally {
     }
   }
-  async fetchBlock(height: number): Promise<boolean> {
+  async fetchBlock(height: number, retry = false): Promise<boolean> {
     try {
       const block = await this.entityManager.findOne(Block, height);
       if (block) {
@@ -449,8 +461,10 @@ class FetchBlock {
     } catch (error) {
       fs.appendFileSync('fetch_failed.log', `${new Date()}\height:${height}\treason:${error.message}\n`)
       console.log(`fetchBlock ${height} Error: ${error.message}`);
-      // await this.wait(1000);
-      // return this.fetchBlock(height);
+      if (retry) {
+        await this.wait(6000);
+        return this.fetchBlock(height, true);
+      }
     }
   }
 }
