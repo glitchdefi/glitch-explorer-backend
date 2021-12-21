@@ -5,7 +5,7 @@ import { keyring } from '@polkadot/ui-keyring';
 import { BN, formatNumber, isFunction } from '@polkadot/util';
 import { getConnection, getManager } from 'typeorm';
 import { Log, Block, Event, Extrinsic, Transaction } from '../src/databases';
-
+const fs = require('fs');
 const wsProvider = new WsProvider(process.env.RPC || 'wss://rpc.polkadot.io');
 const MAX_HEADERS = 75;
 const DEFAULT_TIME = new BN(6000);
@@ -125,9 +125,9 @@ class FetchBlock {
     const isAuthorIds = this.isAuthorIds;
     const isAuthorMappingWithDeposit = this.isAuthorMappingWithDeposit;
 
-    const blockHash = height
-      ? await api.rpc.chain.getBlockHash(height)
-      : await api.rpc.chain.getBlockHash();
+    const blockHash =  await api.rpc.chain.getBlockHash(height)
+      // ? await api.rpc.chain.getBlockHash(height)
+      // : await api.rpc.chain.getBlockHash();
     const signedBlock = await api.rpc.chain.getBlock(blockHash);
 
     const lastHeader: HeaderExtendedWithMapping | undefined =
@@ -402,21 +402,31 @@ class FetchBlock {
   }
 
   async fetchBlocks(): Promise<void> {
-    const block = await this.entityManager.findOne(Block);
-    console.log(JSON.stringify(block));
-    let from = 2538 //block? block.index : 0
+    const block = await this.entityManager.findOne(Block, {
+      order: {
+          index: "DESC",
+      },
+    });
+    let from = process.env.FETCH_FROM_ZERO ? 0 : (block ? block.index : 0)
+    console.log('from' ,from)
     // fetch N block and continue
-    await this._fetchBlockInterval(from);
+    let funcs = []
+    let step = process.env.MULTI_FETCH ? parseInt(process.env.MULTI_FETCH) :  1
+    for (let i = 0; i < step; i++){
+      funcs.push(this._fetchBlockInterval(from+i, step))
+    }
+    await Promise.all(funcs)
   }
 
-  async _fetchBlockInterval(from = 0): Promise<void> {
+  async _fetchBlockInterval(from = 0, step=1): Promise<void> {
     try {
       let success = await this.fetchBlock(from);
       if (success) {
         console.log(`fetchBlock success: from ${from}`);
-        from++;
-        await this._fetchBlockInterval(from);
+        from = from + step;
+        await this._fetchBlockInterval(from, step);
       } else {
+        
         console.log(`fetchBlock failed: from ${from}`);
       }
     } catch (error) {
@@ -433,6 +443,7 @@ class FetchBlock {
       await this.fetchOneBlock(height);
       return true;
     } catch (error) {
+      fs.appendFileSync('fetch_failed.log', `${new Date()}\height:${height}\treason:${error.message}\n`)
       console.log(`fetchBlock ${height} Error: ${error.message}`);
       await this.wait(1000);
       return this.fetchBlock(height);
