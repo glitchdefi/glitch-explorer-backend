@@ -35,6 +35,7 @@ class FetchBlock {
   lastBlockNumber: string = '0';
   isAuthorIds: boolean = false;
   isAuthorMappingWithDeposit: boolean = false;
+  lastLog = 0;
   async init() {
     this.api = await ApiPromise.create({ provider: wsProvider });
     const api = this.api;
@@ -414,35 +415,59 @@ class FetchBlock {
           index: "DESC",
       },
     });
-    let from = process.env.FETCH_FROM_ZERO ? 0 : (block ? block.index : 0)
-    console.log('from' ,from)
-    // fetch N block and continue
+    let from = process.env.FETCH_FROM_ZERO === 'true' ? 0 : (block ? block.index : 0)
+    
+    
     let funcs = []
-    // get last block number
-    const blockHash = await this.api.rpc.chain.getBlockHash();
+    funcs.push(this._fetchLastBlockInterval())
 
-    const lastHeader: HeaderExtendedWithMapping | undefined = await this.api.derive.chain.getHeader(blockHash);
-    if (lastHeader?.number) {
-      let last = lastHeader.number.toNumber();
-      funcs.push(this._fetchBlockInterval(last, 1, true))
-    }
     let step = process.env.MULTI_FETCH ? parseInt(process.env.MULTI_FETCH) : 1
-    //fetch last block
+   // fetch N block and continue
+    if(step > 1)
     for (let i = 0; i < step; i++){
       funcs.push(this._fetchBlockInterval(from+i, step))
     }
+    console.log("Run fetchs", funcs.length)
     await Promise.all(funcs)
   }
 
-  async _fetchBlockInterval(from = 0, step=1, retry=false): Promise<void> {
+  async _fetchLastBlockInterval(): Promise<void> {
     try {
-      let success = await this.fetchBlock(from, retry);
+       // get last block number
+      const blockHash = await this.api.rpc.chain.getBlockHash();
+
+      const lastHeader: HeaderExtendedWithMapping | undefined = await this.api.derive.chain.getHeader(blockHash);
+      if (lastHeader?.number) {
+        let from = lastHeader.number.toNumber();
+        let success = await this.fetchBlock(from);
+        if (success) {
+          console.log(`${new Date().toISOString()} fetchLastBlock success: from ${from}`);
+        } else {
+          console.log(`fetchBlock failed: from ${from}`);
+        }
+      }
+    } catch (error) {
+      console.log(`FetchBlocks Error: ${error.message}`);
+    } finally {
+      await this.wait(6000)
+      this._fetchLastBlockInterval()
+    }
+  }
+
+  async _fetchBlockInterval(from = 0, step=1): Promise<void> {
+    try {
+      let success = await this.fetchBlock(from);
       if (success) {
-        console.log(`fetchBlock success: from ${from}`);
+        let now = Math.floor(Date.now() / 1000)
+      
+        if (from % 1000 === 0 || now - this.lastLog > 60) {
+          
+          console.log(`${new Date().toISOString()} fetchBlock success: from ${from}`);
+          this.lastLog = now
+        }
         from = from + step;
-        await this._fetchBlockInterval(from, step, retry);
+        await this._fetchBlockInterval(from, step);
       } else {
-        
         console.log(`fetchBlock failed: from ${from}`);
       }
     } catch (error) {
@@ -450,7 +475,7 @@ class FetchBlock {
     } finally {
     }
   }
-  async fetchBlock(height: number, retry = false): Promise<boolean> {
+  async fetchBlock(height: number): Promise<boolean> {
     try {
       const block = await this.entityManager.findOne(Block, height);
       if (block) {
@@ -461,10 +486,7 @@ class FetchBlock {
     } catch (error) {
       fs.appendFileSync('fetch_failed.log', `${new Date()}\height:${height}\treason:${error.message}\n`)
       console.log(`fetchBlock ${height} Error: ${error.message}`);
-      if (retry) {
-        await this.wait(6000);
-        return this.fetchBlock(height, true);
-      }
+      return false
     }
   }
 }
