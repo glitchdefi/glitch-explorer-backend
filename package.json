@@ -8,7 +8,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
-    "fetch": " npx ts-node sync_data/service.fetch.ts",
+    "fetch": "NODE_OPTIONS=--max-old-space-size=8192 npx ts-node sync_data/cli.fetchAllBlocks.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
