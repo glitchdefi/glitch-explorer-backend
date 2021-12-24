@@ -1,4 +1,6 @@
 import fetchBlock from './fetchBlock'
+import fetchOneBlock from './fetchOneBlock'
+import fetchLastBlock from './fetchLastBlock'
 import {createConnections, Connection} from "typeorm";
 import { Block } from '../src/databases/Block.entity';
 import { Log } from '../src/databases/Log.entity';
@@ -33,7 +35,10 @@ const run = async (): Promise<void> => {
   console.log('RPC:', process.env.RPC)
   await connect()
   await fetchBlock.init()
+  await fetchOneBlock.init()
+  await fetchLastBlock.init()
   await fetchBlock.fetchBlocks()
+  
 }
 
 run()
