@@ -362,7 +362,7 @@ class FetchOneBlock {
       await this.init()
       const block = await this.entityManager.findOne(Block, height);
       if (block) {
-        console.log(`${new Date().toISOString()} fetchBlock fromDB success: height ${height}`);
+        if (process.env.LOGALL === 'true') console.log(`${new Date().toISOString()} fetchBlock fromDB success: height ${height}`);
         return true;
       }
       await this._fetchOneBlock(height);

@@ -2,7 +2,6 @@ import { Block } from '../src/databases/Block.entity';
 import { getManager } from 'typeorm';
 import * as path from 'path';
 import Connection from './connection'
-import fetchOneBlock from './fetchOneBlock'
 
 import { fork } from 'child_process';
 const fetchLastBlock = () => {
@@ -32,11 +31,12 @@ const fetchOldBLock = async () => {
   var proc
   const os = require('os')
   const cpuCount = os.cpus().length - 1
-  for (var i = 0; i < lastBlockHeight; i+=1000){
-    proc = fork(ChildProcessPath, ["ts-node", i.toString(), (i+1000).toString()], { execArgv: [path.resolve(__dirname, "../node_modules/ts-node/dist/bin.js")] })
+  const step = 10000
+  for (var i = 0; i < lastBlockHeight; i+=step){
+    proc = fork(ChildProcessPath, ["ts-node", i.toString(), (i+step).toString(),  `Process No.${spawnProcess}/${cpuCount}`], { execArgv: [path.resolve(__dirname, "../node_modules/ts-node/dist/bin.js")] })
     spawnProcess++
     proc.on('close', (code) => {
-      console.log(`${new Date().toISOString()} fetched from ${i} to  ${i+1000}\n-----------------------------------------------------\n`)
+      console.log(`${new Date().toISOString()} fetched from ${i} to  ${i+step}\n-----------------------------------------------------\n`)
       spawnProcess--
     });
     while (spawnProcess >= cpuCount) {
