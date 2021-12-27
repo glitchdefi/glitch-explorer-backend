@@ -7,6 +7,7 @@ const run = async (): Promise<void> => {
   if (from >= 0) {
     for (var height = from; height <= to; height++){
       await fetchOneBlock.fetchBlock(height)
+      console.log(`${new Date().toISOString()} ${processName} fetched: height`, height)
     }
   }
   console.log(`${new Date().toISOString()} ${processName} done`)

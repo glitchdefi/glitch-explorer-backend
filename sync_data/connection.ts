@@ -50,6 +50,7 @@ const cloverTypes = {
   EcdsaSignature: "[u8; 65]",
   EvmAddress: "H160",
   EthereumTxHash: "H256",
+  Log: "H256",
   BridgeNetworks: {
     _enum: ["BSC", "Ethereum"],
   },
