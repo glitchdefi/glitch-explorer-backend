@@ -25,6 +25,7 @@ const fetchOldBLock = async () => {
   });
   let lastBlockHeight = (lastBlock ? lastBlock.index : 0)
   if (lastBlockHeight === 0) {
+    console.log("---No Last Block found")
     return
   }
   let spawnProcess = 0

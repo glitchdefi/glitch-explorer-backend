@@ -217,7 +217,7 @@ class FetchOneBlock {
             if (section === 'balances') {
               if (method === 'transfer' || method === 'transferKeepAlive') {
                 let fee = new BN(0);
-                if (api.rpc.payment.queryFeeDetails) {
+                if (!process.env.SKIP_FEE &&  api.rpc.payment.queryFeeDetails) {
                   const queryFeeDetails = await api.rpc.payment.queryInfo(
                     ex.toHex(),
                     blockHash,
@@ -275,7 +275,7 @@ class FetchOneBlock {
             if (section === 'balances') {
               if (method === 'transfer' || method === 'transferKeepAlive') {
                 let fee = new BN(0);
-                if (api.rpc.payment.queryFeeDetails) {
+                if (!process.env.SKIP_FEE && api.rpc.payment.queryFeeDetails) {
                   const queryFeeDetails = await api.rpc.payment.queryInfo(
                     ex.toHex(),
                     blockHash,
