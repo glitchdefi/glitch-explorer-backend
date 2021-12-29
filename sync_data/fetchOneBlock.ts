@@ -2,8 +2,9 @@ import { HeaderExtended } from '@polkadot/api-derive/types';
 import { Balance, DispatchInfo, EventRecord } from '@polkadot/types/interfaces';
 import { keyring } from '@polkadot/ui-keyring';
 import { BN, formatNumber, isFunction } from '@polkadot/util';
-import { Log, Block, Event, Extrinsic, Transaction } from '../src/databases';
+import { Log, Block, Event, Extrinsic, Transaction, BalanceHistory } from '../src/databases';
 import Connection from './connection'
+import fetchBalance from './fetchBalance';
 require('dotenv').config()
 const fs = require('fs');
 const MAX_HEADERS = 75;
@@ -33,6 +34,7 @@ class FetchOneBlock {
   lastBlock=0;
   async init() {
     await Connection.init()
+    await fetchBalance.init()
     this.api = Connection.api
     this.entityManager =  Connection.entityManager
     this.connection = Connection.connection
@@ -166,7 +168,7 @@ class FetchOneBlock {
       let era = Math.floor(
         epoch / api.consts.staking.sessionsPerEra.toNumber(),
       );
-      let time = Number(await api.query.timestamp.now.at(lastHeader.hash));
+      let time = new Date(Number(await api.query.timestamp.now.at(lastHeader.hash)));
 
       const allRecords = await api.query.system.events.at(
         signedBlock.block.header.hash,
@@ -178,7 +180,7 @@ class FetchOneBlock {
       const extrinsic = new Extrinsic();
       extrinsic.hash = lastHeader.extrinsicsRoot.toHex();
       await this.connection.manager.save(extrinsic);
-
+      let accounts = {}
       //extract transaction
       var _extractTransaction = async (ex, index): Promise<void> => {
         const {
@@ -237,7 +239,7 @@ class FetchOneBlock {
                   weight: dispatchInfo.weight.toString(),
                   fee: fee,
                   type: method,
-                  time: new Date(time),
+                  time: time,
                   tip: ex.tip.toString(),
                   extrinsicIndex: extrinsic.id,
                   status: "success"
@@ -246,6 +248,8 @@ class FetchOneBlock {
                   Transaction,
                   transactionData,
                 );
+                accounts[transactionData.from] = transactionData.from
+                accounts[transactionData.to] = transactionData.to
                 txNum++;
               }
             }
@@ -293,7 +297,7 @@ class FetchOneBlock {
                   weight: dispatchInfo.weight.toString(),
                   fee: fee,
                   type: method,
-                  time: new Date(time),
+                  time: time,
                   tip: ex.tip.toString(),
                   extrinsicIndex: extrinsic.id,
                   status: "failed"
@@ -302,6 +306,8 @@ class FetchOneBlock {
                   Transaction,
                   transactionData,
                 );
+                accounts[transactionData.from] = transactionData.from
+                accounts[transactionData.to] = transactionData.to
                 txNum++;
               }
             }
@@ -317,6 +323,16 @@ class FetchOneBlock {
         await _extractTransaction(ex, ei);
       }
 
+      let accountAddresses = Object.keys(accounts)
+      for (let [ai, accAdd] of accountAddresses.entries()) {
+        let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
+        if (stored) {
+          continue
+        }
+        let balance = await fetchBalance.fetchBalance(accAdd, lastHeader.hash)
+        await this.entityManager.insert(BalanceHistory, { address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time })
+      }
+    
       const block = new Block();
       block.index = blockNumber.toNumber();
       block.hash = lastHeader.hash.toHex();
@@ -324,7 +340,7 @@ class FetchOneBlock {
       block.validator = thisBlockAuthor;
       block.epoch = epoch;
       block.weight = weight.toString();
-      block.time = new Date(time);
+      block.time = time;
       block.reward = '0';
       block.extrinsicHash = lastHeader.extrinsicsRoot.toHex();
       (block.eraIndex = era), (block.txNum = txNum);
@@ -359,6 +375,7 @@ class FetchOneBlock {
 
   async fetchBlock(height: number): Promise<boolean> {
     try {
+      const _startTime = Date.now()
       await this.init()
       const block = await this.entityManager.findOne(Block, height);
       if (block) {
@@ -366,11 +383,11 @@ class FetchOneBlock {
         return true;
       }
       await this._fetchOneBlock(height);
-      console.log(`${new Date().toISOString()} fetchBlock success: height ${height}`);
+      console.log(`${new Date().toISOString()} fetchBlock success: height ${height} in ${Date.now() - _startTime} ms`);
       return true;
     } catch (error) {
       fs.appendFileSync('fetch_failed.log', `${new Date()}\height:${height}\treason:${error.message}\n`)
-      console.log(`fetchBlock ${height} Error: ${error.message}`);
+      console.log(`fetchBlock ${height} Error: ${error}`);
       return false
     }
   }
