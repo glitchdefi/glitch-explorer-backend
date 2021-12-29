@@ -74,6 +74,7 @@ class FetchOneBlock {
   }
 
   async _fetchOneBlock(height: number | null) {
+    let startTime = Date.now()
     const api = this.api;
     const byAuthor = this.byAuthor;
     const isAuthorIds = this.isAuthorIds;
@@ -174,9 +175,9 @@ class FetchOneBlock {
         signedBlock.block.header.hash,
       );
       // map between the extrinsics and events
-      let transactions = [];
+      let transactionDatas = [];
       let txNum = 0;
-      let events = [];
+      let eventDatas = [];
       const extrinsic = new Extrinsic();
       extrinsic.hash = lastHeader.extrinsicsRoot.toHex();
       await this.connection.manager.save(extrinsic);
@@ -244,10 +245,7 @@ class FetchOneBlock {
                   extrinsicIndex: extrinsic.id,
                   status: "success"
                 };
-                let transaction = await this.entityManager.insert(
-                  Transaction,
-                  transactionData,
-                );
+                transactionDatas.push(transactionData)
                 accounts[transactionData.from] = transactionData.from
                 accounts[transactionData.to] = transactionData.to
                 txNum++;
@@ -302,10 +300,7 @@ class FetchOneBlock {
                   extrinsicIndex: extrinsic.id,
                   status: "failed"
                 };
-                let transaction = await this.entityManager.insert(
-                  Transaction,
-                  transactionData,
-                );
+                transactionDatas.push(transactionData)
                 accounts[transactionData.from] = transactionData.from
                 accounts[transactionData.to] = transactionData.to
                 txNum++;
@@ -316,22 +311,29 @@ class FetchOneBlock {
             // );
           }
         }
-
-        await this.connection.manager.save(eventEntity);
+        eventDatas.push(eventEntity)
+        // await this.connection.manager.save(eventEntity);
       };
+      // startTime = Date.now()
+      // let startExtract = startTime
       for (let [ei, ex] of signedBlock.block.extrinsics.entries()) {
         await _extractTransaction(ex, ei);
       }
-
+      // console.log('--extract', Date.now() - startExtract)
+      // startTime = Date.now()
+      await this.connection.createQueryBuilder().insert().into(Event).values(eventDatas).execute()
+      await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas).execute()
       let accountAddresses = Object.keys(accounts)
+      let balanceHistoryDatas = []
       for (let [ai, accAdd] of accountAddresses.entries()) {
         let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
         if (stored) {
           continue
         }
         let balance = await fetchBalance.fetchBalance(accAdd, lastHeader.hash)
-        await this.entityManager.insert(BalanceHistory, { address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time })
+        balanceHistoryDatas.push({ address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time })
       }
+      await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
     
       const block = new Block();
       block.index = blockNumber.toNumber();
@@ -355,8 +357,11 @@ class FetchOneBlock {
         logEntity.ConsensusEngineId = Object.values(log)[0][0];
         logEntity.byte = Object.values(log)[0][1];
         logEntity.blockIndex = block;
-        await this.connection.manager.save(logEntity);
+        logs.push(logEntity)
       }
+      await this.connection.createQueryBuilder().insert().into(Log).values(logs).execute()
+      // console.log('--saveDB', Date.now() - startTime)
+      // startTime = Date.now()
       // await this.connection.createQueryBuilder().update(Block).set({ txNum: }).where("index=:index", { index: block.index }).execute()
     }
   }
