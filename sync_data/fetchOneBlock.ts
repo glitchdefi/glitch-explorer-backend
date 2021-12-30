@@ -75,6 +75,9 @@ class FetchOneBlock {
 
   async _fetchOneBlock(height: number | null) {
     let startTime = Date.now()
+    const isFetchLog = process.env.SKIP_LOG !== "true"
+    const isFetchEvent = process.env.SKIP_EVENT !== "true"
+    const isFetchBalance = process.env.SKIP_BALANCE !== "true"
     const api = this.api;
     const byAuthor = this.byAuthor;
     const isAuthorIds = this.isAuthorIds;
@@ -183,7 +186,47 @@ class FetchOneBlock {
       await this.connection.manager.save(extrinsic);
       let accounts = {}
       //extract transaction
-      var _extractTransaction = async (ex, index): Promise<void> => {
+      const _buildTransactionData =  async (section, method, ex, eventEntity, signer, args, dispatchInfo, success) => {
+        if (section === 'balances') {
+          if (method === 'transfer' || method === 'transferKeepAlive') {
+            let fee = new BN(0);
+            if (!process.env.SKIP_FEE && api.rpc.payment.queryFeeDetails) {
+              const queryFeeDetails = await api.rpc.payment.queryInfo(
+                ex.toHex(),
+                blockHash,
+              );
+              if (queryFeeDetails) {
+                fee = queryFeeDetails.partialFee;
+              }
+            }
+            if (isFetchEvent) {
+              eventEntity.from = signer?.toString();
+              eventEntity.to = args && args.length ? args[0]?.toString() : '';
+              eventEntity.value =
+                args && args.length > 1 ? args[1].toString() : '';
+            }
+        
+
+            let transactionData = {
+              hash: ex.hash.toHex(),
+              from: signer?.toString(),
+              to: args[0].toString(),
+              value: args[1].toString(),
+              weight: dispatchInfo.weight.toString(),
+              fee: fee,
+              type: method,
+              time: time,
+              tip: ex.tip.toString(),
+              extrinsicIndex: extrinsic.id,
+              status: success ? "success" : "failed"
+            };
+            transactionDatas.push(transactionData)
+            accounts[transactionData.from] = transactionData.from
+            accounts[transactionData.to] = transactionData.to
+          }
+        }
+      }
+      const _extractTransaction = async (ex, index): Promise<void> => {
         const {
           method: {
             method,
@@ -198,12 +241,15 @@ class FetchOneBlock {
         } = ex;
         const args = ex.method.args;
         let eventEntity = new Event();
-        eventEntity.name = `${section}.${method}`;
-        eventEntity.hash = ex.hash.toHex();
-        eventEntity.source = ex.toHex();
-        eventEntity.log = '';
-        eventEntity.weight = '';
-        eventEntity.extrinsicIndex = extrinsic;
+        if (isFetchEvent) {
+          eventEntity.name = `${section}.${method}`;
+          eventEntity.hash = ex.hash.toHex();
+          eventEntity.source = ex.toHex();
+          eventEntity.log = '';
+          eventEntity.weight = '';
+          eventEntity.extrinsicIndex = extrinsic;
+        }
+       
 
         let filtered = allRecords.filter(
           ({ phase }) =>
@@ -213,44 +259,11 @@ class FetchOneBlock {
           let { event } = record;
           if (api.events.system.ExtrinsicSuccess.is(event)) {
             const [dispatchInfo] = event.data;
-            eventEntity.weight = dispatchInfo.weight.toString();
-            // extract transfer
-            if (section === 'balances') {
-              if (method === 'transfer' || method === 'transferKeepAlive') {
-                let fee = new BN(0);
-                if (!process.env.SKIP_FEE &&  api.rpc.payment.queryFeeDetails) {
-                  const queryFeeDetails = await api.rpc.payment.queryInfo(
-                    ex.toHex(),
-                    blockHash,
-                  );
-                  if (queryFeeDetails) {
-                    fee = queryFeeDetails.partialFee;
-                  }
-                }
-                eventEntity.from = signer?.toString();
-                eventEntity.to = args && args.length ? args[0]?.toString() : '';
-                eventEntity.value =
-                  args && args.length > 1 ? args[1].toString() : '';
-
-                let transactionData = {
-                  hash: ex.hash.toHex(),
-                  from: signer?.toString(),
-                  to: args[0].toString(),
-                  value: args[1].toString(),
-                  weight: dispatchInfo.weight.toString(),
-                  fee: fee,
-                  type: method,
-                  time: time,
-                  tip: ex.tip.toString(),
-                  extrinsicIndex: extrinsic.id,
-                  status: "success"
-                };
-                transactionDatas.push(transactionData)
-                accounts[transactionData.from] = transactionData.from
-                accounts[transactionData.to] = transactionData.to
-                txNum++;
-              }
+            if (isFetchEvent) {
+              eventEntity.weight = dispatchInfo.weight.toString();
             }
+            // extract transfer
+            await _buildTransactionData(section, method, ex, eventEntity, signer, args, dispatchInfo, true)
           } else if (api.events.system.ExtrinsicFailed.is(event)) {
             const [dispatchError, dispatchInfo] = event.data;
             let errorInfo;
@@ -268,52 +281,17 @@ class FetchOneBlock {
               
             } else {
               errorInfo = dispatchError.toString();
-              eventEntity.log = dispatchError.toString();
+              if (isFetchEvent)
+                eventEntity.log = dispatchError.toString();
             }
-            if (section === 'balances') {
-              if (method === 'transfer' || method === 'transferKeepAlive') {
-                let fee = new BN(0);
-                if (!process.env.SKIP_FEE && api.rpc.payment.queryFeeDetails) {
-                  const queryFeeDetails = await api.rpc.payment.queryInfo(
-                    ex.toHex(),
-                    blockHash,
-                  );
-                  if (queryFeeDetails) {
-                    fee = queryFeeDetails.partialFee;
-                  }
-                }
-                eventEntity.from = signer?.toString();
-                eventEntity.to = args && args.length ? args[0]?.toString() : '';
-                eventEntity.value =
-                  args && args.length > 1 ? args[1].toString() : '';
-
-                let transactionData = {
-                  hash: ex.hash.toHex(),
-                  from: signer?.toString(),
-                  to: args[0].toString(),
-                  value: args[1].toString(),
-                  weight: dispatchInfo.weight.toString(),
-                  fee: fee,
-                  type: method,
-                  time: time,
-                  tip: ex.tip.toString(),
-                  extrinsicIndex: extrinsic.id,
-                  status: "failed"
-                };
-                transactionDatas.push(transactionData)
-                accounts[transactionData.from] = transactionData.from
-                accounts[transactionData.to] = transactionData.to
-                txNum++;
-              }
-            }
-            // console.log(
-            //   `${section}.${method}:: ExtrinsicFailed:: ${errorInfo}`,
-            // );
+            await _buildTransactionData(section, method, ex, eventEntity, signer, args, dispatchInfo, false)
           }
         }
-        eventDatas.push(eventEntity)
-        // await this.connection.manager.save(eventEntity);
+        if (isFetchEvent) {
+          eventDatas.push(eventEntity)
+        }
       };
+      
       // startTime = Date.now()
       // let startExtract = startTime
       for (let [ei, ex] of signedBlock.block.extrinsics.entries()) {
@@ -321,19 +299,23 @@ class FetchOneBlock {
       }
       // console.log('--extract', Date.now() - startExtract)
       // startTime = Date.now()
-      await this.connection.createQueryBuilder().insert().into(Event).values(eventDatas).execute()
+      if (isFetchEvent) await this.connection.createQueryBuilder().insert().into(Event).values(eventDatas).execute()
+      
       await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas).execute()
-      let accountAddresses = Object.keys(accounts)
-      let balanceHistoryDatas = []
-      for (let [ai, accAdd] of accountAddresses.entries()) {
-        let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
-        if (stored) {
-          continue
+
+      if (isFetchBalance) {
+        let accountAddresses = Object.keys(accounts)
+        let balanceHistoryDatas = []
+        for (let [ai, accAdd] of accountAddresses.entries()) {
+          let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
+          if (stored) {
+            continue
+          }
+          let balance = await fetchBalance.fetchBalance(accAdd, lastHeader.hash)
+          balanceHistoryDatas.push({ address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time })
         }
-        let balance = await fetchBalance.fetchBalance(accAdd, lastHeader.hash)
-        balanceHistoryDatas.push({ address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time })
+        await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
       }
-      await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
     
       const block = new Block();
       block.index = blockNumber.toNumber();
@@ -349,20 +331,22 @@ class FetchOneBlock {
       block.extrinsic = extrinsic;
       await this.connection.manager.save(block);
       // insert log
-      let logs = [];
-      for (let [li, log] of signedBlock.block.header.digest.logs.entries()) {
-        log = log.toHuman();
-        let logEntity = new Log();
-        logEntity.title = Object.keys(log)[0];
-        logEntity.ConsensusEngineId = Object.values(log)[0][0];
-        logEntity.byte = Object.values(log)[0][1];
-        logEntity.blockIndex = block;
-        logs.push(logEntity)
+      if (isFetchLog) {
+        let logs = [];
+        for (let [li, log] of signedBlock.block.header.digest.logs.entries()) {
+          log = log.toHuman();
+          let logEntity = new Log();
+          logEntity.title = Object.keys(log)[0];
+          logEntity.ConsensusEngineId = Object.values(log)[0][0];
+          logEntity.byte = Object.values(log)[0][1];
+          logEntity.blockIndex = block;
+          logs.push(logEntity)
+        }
+        await this.connection.createQueryBuilder().insert().into(Log).values(logs).execute()
       }
-      await this.connection.createQueryBuilder().insert().into(Log).values(logs).execute()
+      
       // console.log('--saveDB', Date.now() - startTime)
       // startTime = Date.now()
-      // await this.connection.createQueryBuilder().update(Block).set({ txNum: }).where("index=:index", { index: block.index }).execute()
     }
   }
 
