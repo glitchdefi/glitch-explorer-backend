@@ -218,6 +218,7 @@ class FetchOneBlock {
               time: time,
               tip: ex.tip.toString(),
               extrinsicIndex: extrinsic.id,
+              blockIndex: blockNumber.toNumber(),
               status: success ? "success" : "failed"
             };
             transactionDatas.push(transactionData)
@@ -327,7 +328,7 @@ class FetchOneBlock {
       block.time = time;
       block.reward = '0';
       block.extrinsicHash = lastHeader.extrinsicsRoot.toHex();
-      (block.eraIndex = era), (block.txNum = txNum);
+      (block.eraIndex = era), (block.txNum = transactionDatas.length);
       block.extrinsic = extrinsic;
       await this.connection.manager.save(block);
       // insert log

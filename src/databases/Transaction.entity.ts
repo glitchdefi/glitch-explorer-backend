@@ -39,8 +39,12 @@ export class Transaction {
   @Column({ name: 'status', default: "success" })
   status: string;
 
+  @Column({ name: 'block_index', default: -1 })
+  blockIndex: number;
+
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
+  
 
   @ManyToOne(() => Extrinsic, (extrinsic: Extrinsic) => extrinsic.tx, {
     eager: true,
