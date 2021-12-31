@@ -2,7 +2,7 @@ import { HeaderExtended } from '@polkadot/api-derive/types';
 import { Balance, DispatchInfo, EventRecord } from '@polkadot/types/interfaces';
 import { keyring } from '@polkadot/ui-keyring';
 import { BN, formatNumber, isFunction } from '@polkadot/util';
-import { Log, Block, Event, Extrinsic, Transaction, BalanceHistory } from '../src/databases';
+import { Log, Block, Event, Extrinsic, Transaction, BalanceHistory, Address } from '../src/databases';
 import Connection from './connection'
 import fetchBalance from './fetchBalance';
 require('dotenv').config()
@@ -179,7 +179,6 @@ class FetchOneBlock {
       );
       // map between the extrinsics and events
       let transactionDatas = [];
-      let txNum = 0;
       let eventDatas = [];
       const extrinsic = new Extrinsic();
       extrinsic.hash = lastHeader.extrinsicsRoot.toHex();
@@ -249,8 +248,8 @@ class FetchOneBlock {
           eventEntity.log = '';
           eventEntity.weight = '';
           eventEntity.extrinsicIndex = extrinsic;
+          eventEntity.blockIndex = blockNumber.toNumber()
         }
-       
 
         let filtered = allRecords.filter(
           ({ phase }) =>
@@ -307,7 +306,9 @@ class FetchOneBlock {
       if (isFetchBalance) {
         let accountAddresses = Object.keys(accounts)
         let balanceHistoryDatas = []
+        let addressDatas = []
         for (let [ai, accAdd] of accountAddresses.entries()) {
+          addressDatas.push({ address: accAdd, role: 1})
           let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
           if (stored) {
             continue
@@ -316,6 +317,7 @@ class FetchOneBlock {
           balanceHistoryDatas.push({ address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time })
         }
         await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
+        await this.connection.createQueryBuilder().insert().into(Address).values(addressDatas).onConflict(`("address") DO NOTHING`).execute()
       }
     
       const block = new Block();
