@@ -5,6 +5,7 @@ import {
   OneToMany,
   OneToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Log } from './Log.entity';
 import { Extrinsic } from './Extrinsic.entity';
@@ -14,12 +15,15 @@ export class Block {
   @PrimaryColumn({ name: 'index' })
   index: number;
 
+  @Index()
   @Column({ name: 'hash' })
   hash: string;
 
+  @Index()
   @Column({ name: 'parent_hash' })
   parentHash: string;
 
+  @Index()
   @Column({ name: 'validator' })
   validator: string;
 
@@ -38,6 +42,7 @@ export class Block {
   @Column({ name: 'extrinsic_hash' })
   extrinsicHash: string;
 
+  @Index()
   @Column({ name: 'era_index' })
   eraIndex: number;
 

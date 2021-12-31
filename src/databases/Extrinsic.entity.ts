@@ -5,6 +5,7 @@ import {
   OneToMany,
   OneToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Transaction } from './Transaction.entity';
 import { Event } from './Event.entity';
@@ -22,6 +23,7 @@ export class Extrinsic {
     eager: true,
     cascade: true,
   })
+  @Index()
   @JoinColumn({ name: 'block_index' })
   block: Block;
 

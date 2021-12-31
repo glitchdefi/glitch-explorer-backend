@@ -4,6 +4,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Index,
 } from 'typeorm';
 import { Block } from './Block.entity';
 
@@ -11,6 +12,7 @@ import { Block } from './Block.entity';
 export class Log {
   @PrimaryGeneratedColumn({ name: 'id' })
   id: number;
+  @Index()
   @Column({ name: 'title' })
   title: string;
 
@@ -21,6 +23,7 @@ export class Log {
   byte: string;
 
   @ManyToOne(() => Block, (block: Block) => block.logs)
+  @Index()
   @JoinColumn({ name: 'block_index' })
   blockIndex: Block;
 }
