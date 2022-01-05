@@ -34,21 +34,21 @@ const fetchOldBLock = async () => {
   const cpuCount = process.env.MULTI_FETCH ? parseInt(process.env.MULTI_FETCH) : os.cpus().length - 1 
   const step = 100
   let start = process.env.START_FROM ? parseInt(process.env.START_FROM) : 0
-  console.log(`Start ${cpuCount} processes, fetching from ${start}, last blockHeight`, lastBlockHeight)
+  console.log(`${os.cpus().length} Core | Start ${cpuCount} processes, fetching from ${start}, last blockHeight`, lastBlockHeight)
   for (var i = start; i < lastBlockHeight; i+=step){
     let from = i
-    let to = i + step
+    let to = Math.min(i + step, lastBlockHeight)
     let [blocks, count] = await entityManager.findAndCount(Block, { index: Between(from, to) });
     if (count >= step) {
-      console.log(`${new Date().toISOString()} fetched from ${i} to  ${i+step}\n-----------------------------------------------------\n`)
+      console.log(`${new Date().toISOString()} fetched from ${i} to  ${to}\n-----------------------------------------------------\n`)
       continue
     } else {
-      console.log(`${new Date().toISOString()}  Fork Process No.${spawnProcess}/${cpuCount} is fetching from ${i} to  ${i+step}, in db ${count}`)
+      console.log(`${new Date().toISOString()}  Fork Process No.${spawnProcess}/${cpuCount} is fetching from ${i} to  ${to}, in db ${count}`)
     }
-    proc = fork(ChildProcessPath, ["ts-node", i.toString(), (i+step).toString(),  `Process No.${spawnProcess}/${cpuCount}`], { execArgv: [path.resolve(__dirname, "../node_modules/ts-node/dist/bin.js")] })
+    proc = fork(ChildProcessPath, ["ts-node", i.toString(), (to).toString(),  `Process No.${spawnProcess}/${cpuCount}`], { execArgv: [path.resolve(__dirname, "../node_modules/ts-node/dist/bin.js")] })
     spawnProcess++
     proc.on('close', (code) => {
-      console.log(`${new Date().toISOString()} fetched from ${i} to  ${i+step}\n-----------------------------------------------------\n`)
+      console.log(`${new Date().toISOString()} fetched from ${i} to  ${to}\n-----------------------------------------------------\n`)
       spawnProcess--
     });
     while (spawnProcess >= cpuCount) {

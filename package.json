@@ -8,7 +8,7 @@
   "scripts": {
     "prebuild": "rimraf dist",
     "build": "nest build",
-    "fetch": "NODE_OPTIONS=--max-old-space-size=8192 npx ts-node sync_data/cli.fetchAllBlocks.ts",
+    "fetch": "NODE_OPTIONS=--max-old-space-size=2048 npx ts-node sync_data/cli.fetchAllBlocks.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -47,6 +47,7 @@
     "@types/supertest": "^2.0.11",
     "@typescript-eslint/eslint-plugin": "^4.28.2",
     "@typescript-eslint/parser": "^4.28.2",
+    "cross-env": "^7.0.3",
     "eslint": "^7.30.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
