@@ -212,7 +212,7 @@ class FetchOneBlock {
               to: args[0].toString(),
               value: args[1].toString(),
               weight: dispatchInfo.weight.toString(),
-              fee: fee,
+              fee: fee.toString(),
               type: method,
               time: time,
               tip: ex.tip.toString(),
