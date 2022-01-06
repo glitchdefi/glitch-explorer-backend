@@ -333,6 +333,8 @@ class FetchOneBlock {
       
       await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas).execute()
 
+      await this.connection.createQueryBuilder().update(Block).set({ txNum: transactionDatas.length }).where("index = :index", { index: blockNumber.toNumber() }).execute()
+      
       if (isFetchBalance) {
         let accountAddresses = Object.keys(accounts)
         let balanceHistoryDatas = []
