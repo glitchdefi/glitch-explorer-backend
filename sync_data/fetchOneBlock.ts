@@ -173,6 +173,23 @@ class FetchOneBlock {
         epoch / api.consts.staking.sessionsPerEra.toNumber(),
       );
       let time = new Date(Number(await api.query.timestamp.now.at(lastHeader.hash)));
+      let block = await this.entityManager.findOne(Block, { where: { index: blockNumber.toNumber() } })
+      if (!block) {
+        block = new Block()
+      }
+      block.index = blockNumber.toNumber();
+      block.hash = lastHeader.hash.toHex();
+      block.parentHash = lastHeader.parentHash.toHex();
+      block.validator = thisBlockAuthor;
+      block.epoch = epoch;
+      block.weight = weight.toString();
+      block.time = time;
+      block.reward = '0';
+      block.extrinsicHash = lastHeader.extrinsicsRoot.toHex();
+      block.eraIndex = era
+      block.txNum = -1
+      await this.connection.manager.save(block);
+
 
       const allRecords = await api.query.system.events.at(
         signedBlock.block.header.hash,
@@ -180,12 +197,25 @@ class FetchOneBlock {
       // map between the extrinsics and events
       let transactionDatas = [];
       let eventDatas = [];
-      const extrinsic = new Extrinsic();
-      extrinsic.hash = lastHeader.extrinsicsRoot.toHex();
-      await this.connection.manager.save(extrinsic);
+      let extrinsic = await this.entityManager.findOne(Extrinsic, { where: { hash: lastHeader.extrinsicsRoot.toHex() } })
+      if (!extrinsic) {
+        extrinsic = new Extrinsic();
+        extrinsic.hash = lastHeader.extrinsicsRoot.toHex();
+        extrinsic.block = block
+        try {
+          await this.connection.manager.save(extrinsic);
+        } catch (error) {
+          // console.log(`save entrinsic failed`, error)
+          await this.connection.createQueryBuilder().update(Extrinsic).set({ block: block }).where("hash = :hash", { hash: lastHeader.extrinsicsRoot.toHex()}).execute()
+          extrinsic = await this.entityManager.findOne(Extrinsic, { where: { hash: lastHeader.extrinsicsRoot.toHex() } })
+        }
+      } else {
+        await this.connection.createQueryBuilder().update(Extrinsic).set({ block: block }).where("hash = :hash", { hash: lastHeader.extrinsicsRoot.toHex()}).execute()
+      }
+
       let accounts = {}
       //extract transaction
-      const _buildTransactionData =  async (section, method, ex, eventEntity, signer, args, dispatchInfo, success) => {
+      const _buildTransactionData = async (section, method, ex, eventEntity, signer, args, dispatchInfo, success) => {
         if (section === 'balances') {
           if (method === 'transfer' || method === 'transferKeepAlive') {
             let fee = new BN(0);
@@ -308,7 +338,7 @@ class FetchOneBlock {
         let balanceHistoryDatas = []
         let addressDatas = []
         for (let [ai, accAdd] of accountAddresses.entries()) {
-          addressDatas.push({ address: accAdd, role: 1})
+          addressDatas.push({ address: accAdd, role: 1 })
           let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
           if (stored) {
             continue
@@ -320,19 +350,7 @@ class FetchOneBlock {
         await this.connection.createQueryBuilder().insert().into(Address).values(addressDatas).onConflict(`("address") DO NOTHING`).execute()
       }
     
-      const block = new Block();
-      block.index = blockNumber.toNumber();
-      block.hash = lastHeader.hash.toHex();
-      block.parentHash = lastHeader.parentHash.toHex();
-      block.validator = thisBlockAuthor;
-      block.epoch = epoch;
-      block.weight = weight.toString();
-      block.time = time;
-      block.reward = '0';
-      block.extrinsicHash = lastHeader.extrinsicsRoot.toHex();
-      (block.eraIndex = era), (block.txNum = transactionDatas.length);
-      block.extrinsic = extrinsic;
-      await this.connection.manager.save(block);
+      
       // insert log
       if (isFetchLog) {
         let logs = [];
