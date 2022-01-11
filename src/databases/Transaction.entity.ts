@@ -12,7 +12,8 @@ import { Extrinsic } from './Extrinsic.entity';
 export class Transaction {
   @PrimaryGeneratedColumn({ name: 'id' })
   id: number;
-
+  
+  @Index()
   @Column({ name: 'hash' })
   hash: string;
   @Index()
