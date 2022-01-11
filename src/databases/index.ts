@@ -5,3 +5,4 @@ export * from './Address.entity';
 export * from './Event.entity';
 export * from './Extrinsic.entity';
 export * from './BalanceHistory.entity';
+export * from './TransactionFeeProgress.entity'

@@ -2,7 +2,7 @@ import { HeaderExtended } from '@polkadot/api-derive/types';
 import { Balance, DispatchInfo, EventRecord } from '@polkadot/types/interfaces';
 import { keyring } from '@polkadot/ui-keyring';
 import { BN, formatNumber, isFunction } from '@polkadot/util';
-import { Log, Block, Event, Extrinsic, Transaction, BalanceHistory, Address } from '../src/databases';
+import { Log, Block, Event, Extrinsic, Transaction, BalanceHistory, Address, TransactionFeeProgress } from '../src/databases';
 import Connection from './connection'
 import fetchBalance from './fetchBalance';
 require('dotenv').config()
@@ -214,11 +214,18 @@ class FetchOneBlock {
       }
 
       let accounts = {}
+      let feeDatas = []
       //extract transaction
       const _buildTransactionData = async (section, method, ex, eventEntity, signer, args, dispatchInfo, success) => {
         if (section === 'balances') {
           if (method === 'transfer' || method === 'transferKeepAlive') {
             let fee = new BN(0);
+            let feeData = {
+              exHash: ex.toHex().toString().substring(2),
+              blockHash: blockHash,
+              status: 0,
+              txHash: ex.hash.toHex()
+            }
             if (!process.env.SKIP_FEE && api.rpc.payment.queryFeeDetails) {
               const queryFeeDetails = await api.rpc.payment.queryInfo(
                 ex.toHex(),
@@ -227,7 +234,9 @@ class FetchOneBlock {
               if (queryFeeDetails) {
                 fee = queryFeeDetails.partialFee;
               }
+              feeData.status = 1
             }
+            feeDatas.push(feeData)
             if (isFetchEvent) {
               eventEntity.from = signer?.toString();
               eventEntity.to = args && args.length ? args[0]?.toString() : '';
@@ -332,7 +341,7 @@ class FetchOneBlock {
       if (isFetchEvent) await this.connection.createQueryBuilder().insert().into(Event).values(eventDatas).execute()
       
       await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas).execute()
-
+      await this.connection.createQueryBuilder().insert().into(TransactionFeeProgress).values(feeDatas).execute()
       await this.connection.createQueryBuilder().update(Block).set({ txNum: transactionDatas.length }).where("index = :index", { index: blockNumber.toNumber() }).execute()
       
       if (isFetchBalance) {
