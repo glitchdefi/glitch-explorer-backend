@@ -19,7 +19,7 @@ class FetchBalance {
   }
 
   async fetchBalance(address: string, parentHash: any): Promise<string> {
-    const api = this.api
+    const api = this.api || Connection.api
     const balance = await api.query.system.account.at(parentHash, address);
     let {data} = balance
 
