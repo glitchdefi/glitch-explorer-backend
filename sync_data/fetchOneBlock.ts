@@ -313,14 +313,14 @@ class FetchOneBlock {
           eventDatas.push(eventEntity)
         }
       };
-      console.log('--header', Date.now() - startTime)
-      startTime = Date.now()
+      // console.log('--header', Date.now() - startTime)
+      // startTime = Date.now()
       let startExtract = startTime
       for (let [ei, ex] of signedBlock.block.extrinsics.entries()) {
         await _extractTransaction(ex, ei);
       }
-      console.log('--extract', Date.now() - startExtract)
-      startTime = Date.now()
+      // console.log('--extract', Date.now() - startExtract)
+      // startTime = Date.now()
       let balanceHistoryDatas = []
       let addressDatas = []
       let accountAddresses = Object.keys(accounts)
@@ -336,8 +336,8 @@ class FetchOneBlock {
       await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
       await this.connection.createQueryBuilder().insert().into(Address).values(addressDatas).onConflict(`("address") DO NOTHING`).execute()
 
-      console.log('--balance', Date.now() - startExtract)
-      startTime = Date.now()
+      // console.log('--balance', Date.now() - startExtract)
+      // startTime = Date.now()
 
       if (isFetchEvent) await this.connection.createQueryBuilder().insert().into(Event).values(eventDatas).execute()
 
@@ -359,7 +359,7 @@ class FetchOneBlock {
         await this.connection.createQueryBuilder().insert().into(Log).values(logs).execute()
       }
 
-      console.log('--saveDB', Date.now() - startTime)
+      // console.log('--saveDB', Date.now() - startTime)
       // startTime = Date.now()
       console.log(`${new Date().toISOString()} fetchBlock success: height ${height} txNum ${transactionDatas.length} events ${eventDatas.length} balanceHistoryDatas ${balanceHistoryDatas.length} addressDatas ${addressDatas.length} logs ${logs.length}`);
     }

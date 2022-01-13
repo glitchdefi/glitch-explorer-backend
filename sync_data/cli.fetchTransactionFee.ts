@@ -35,7 +35,7 @@ const fetchTransactionFee = async () => {
   console.log(lastTransactions.length)
   if (lastTransactions.length === 0) {
     console.log('--- no transaction to fetch fee, wait 100s')
-    await (100000)
+    await wait(100000)
     await fetchTransactionFee()
     return;
   }
