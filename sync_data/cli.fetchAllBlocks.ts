@@ -8,6 +8,14 @@ const fetchLastBlock = () => {
   let ChildProcessPath = path.resolve(__dirname , "cli.fetchLastBlocks.ts")
   const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
 }
+const fetchFee = () => {
+  let ChildProcessPath = path.resolve(__dirname , "cli.fetchTransactionFee.ts")
+  const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
+}
+const fetchBalance = () => {
+  let ChildProcessPath = path.resolve(__dirname , "cli.fetchBalanceHistory.ts")
+  const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
+}
 const wait = (time = 1000): Promise<void> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -25,7 +33,9 @@ const fetchOldBLock = async () => {
   });
   let lastBlockHeight = (lastBlock ? lastBlock.index : 0)
   if (lastBlockHeight === 0) {
-    console.log("---No Last Block found")
+    console.log("---No Last Block found. Retry in 10s")
+    await wait(10000)
+    await fetchOldBLock()
     return
   }
   let spawnProcess = 0
@@ -39,13 +49,14 @@ const fetchOldBLock = async () => {
     let from = i
     let to = Math.min(i + step, lastBlockHeight)
     let [blocks, count] = await entityManager.findAndCount(Block, { index: Between(from, to) });
+    let processTitle = `Process No.${spawnProcess + 1}/${cpuCount}`
     if (count >= step) {
       console.log(`${new Date().toISOString()} fetched from ${i} to  ${to}\n-----------------------------------------------------\n`)
       continue
     } else {
-      console.log(`${new Date().toISOString()}  Fork Process No.${spawnProcess}/${cpuCount} is fetching from ${i} to  ${to}, in db ${count}`)
+      console.log(`${new Date().toISOString()}  Fork ${processTitle} is fetching from ${i} to  ${to}, in db ${count}`)
     }
-    proc = fork(ChildProcessPath, ["ts-node", i.toString(), (to).toString(),  `Process No.${spawnProcess}/${cpuCount}`], { execArgv: [path.resolve(__dirname, "../node_modules/ts-node/dist/bin.js")] })
+    proc = fork(ChildProcessPath, ["ts-node", i.toString(), (to).toString(), processTitle ], { execArgv: [path.resolve(__dirname, "../node_modules/ts-node/dist/bin.js")] })
     spawnProcess++
     proc.on('close', (code) => {
       console.log(`${new Date().toISOString()} fetched from ${i} to  ${to}\n-----------------------------------------------------\n`)
@@ -55,11 +66,17 @@ const fetchOldBLock = async () => {
       await wait(1000)
     }
   }
+
+  console.log(`---Feched to last block ${lastBlockHeight}. Rerun in 100s`)
+  await wait(100000)
+  await fetchOldBLock()
 }
 const run = async (): Promise<void> => {
   await Connection.init()
   fetchLastBlock()
   fetchOldBLock()
+  fetchFee()
+  fetchBalance()
 }
 
 run()

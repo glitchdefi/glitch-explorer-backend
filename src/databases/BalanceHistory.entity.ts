@@ -18,4 +18,9 @@ export class BalanceHistory {
 
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
+  @Column( { name: 'fetch_status' })
+  fetchStatus: number;
+  
+  @Column({ name: 'header_hash' })
+  headerHash: string;
 }

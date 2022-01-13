@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { HeaderExtended } from '@polkadot/api-derive/types';
 import { createConnections, getConnection, getManager } from 'typeorm';
-import { Address, BalanceHistory, Block, Event, Extrinsic, Log, Transaction, TransactionFeeProgress } from '../src/databases';
+import { Address, BalanceHistory, Block, Event, Extrinsic, Log, Transaction } from '../src/databases';
 require('dotenv').config()
 const connect = async (): Promise<void> => {
   await createConnections([{
@@ -13,7 +13,7 @@ const connect = async (): Promise<void> => {
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
     schema: process.env.DATABASE_SCHEMA || `public`,
-    logging: ["query","error"],
+    logging: ["query", "error"],
     entities: [
       Block,
       Log,
@@ -22,7 +22,6 @@ const connect = async (): Promise<void> => {
       Event,
       Extrinsic,
       BalanceHistory,
-      TransactionFeeProgress
     ],
     synchronize: true,
   }]);

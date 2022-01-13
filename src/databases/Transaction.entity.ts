@@ -55,4 +55,9 @@ export class Transaction {
   @Index()
   @JoinColumn({ name: 'extrinsic_index' })
   extrinsicIndex?: Extrinsic;
+
+  @Column({ name: 'ex_hash' })
+  exHash: string;
+  @Column( { name: 'fetch_status' })
+  fetchStatus: number;
 }
