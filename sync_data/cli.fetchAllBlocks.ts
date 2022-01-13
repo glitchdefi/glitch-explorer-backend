@@ -42,7 +42,7 @@ const fetchOldBLock = async () => {
   var proc
   const os = require('os')
   const cpuCount = process.env.MULTI_FETCH ? parseInt(process.env.MULTI_FETCH) : os.cpus().length - 1 
-  const step = 10000
+  const step = 100
   let start = process.env.START_FROM ? parseInt(process.env.START_FROM) : 0
   console.log(`${os.cpus().length} Core | Start ${cpuCount} processes, fetching from ${start}, last blockHeight`, lastBlockHeight)
   for (var i = start; i < lastBlockHeight; i+=step){
