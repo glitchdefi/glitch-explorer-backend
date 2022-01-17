@@ -32,7 +32,8 @@ export class Block {
 
   @Column({ name: 'weight' })
   weight: string;
-
+  
+  @Index()
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
 

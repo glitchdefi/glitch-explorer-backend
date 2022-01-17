@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
 enum AddressType {
   sr25519 = 1,
   sha256 = 2,
@@ -9,7 +9,12 @@ enum AddressType {
 export class Address {
   @PrimaryColumn({ name: 'address' })
   address: string;
-
+  
+  @Index()
   @Column('enum', { name: 'type', enum: AddressType })
   role: AddressType;
+
+  @Index()
+  @Column({ name: 'created', type: 'timestamptz' })
+  created: Date;
 }

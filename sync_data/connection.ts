@@ -1,7 +1,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { HeaderExtended } from '@polkadot/api-derive/types';
 import { createConnections, getConnection, getManager } from 'typeorm';
-import { Address, BalanceHistory, Block, Event, Extrinsic, Log, Transaction } from '../src/databases';
+import { Address, BalanceHistory, Block, DailySummary, Event, Extrinsic, Log, Transaction } from '../src/databases';
 require('dotenv').config()
 const connect = async (): Promise<void> => {
   await createConnections([{
@@ -13,7 +13,9 @@ const connect = async (): Promise<void> => {
     password: process.env.DATABASE_PASSWORD,
     database: process.env.DATABASE_NAME,
     schema: process.env.DATABASE_SCHEMA || `public`,
-    logging: ["query", "error"],
+    logging: [
+      "query",
+      "error"],
     entities: [
       Block,
       Log,
@@ -22,12 +24,13 @@ const connect = async (): Promise<void> => {
       Event,
       Extrinsic,
       BalanceHistory,
+      DailySummary
     ],
     synchronize: true,
   }]);
 }
 const RPC = process.env.RPC || 'wss://rpc.polkadot.io'
-console.log('RPC', RPC)
+console.log('RPC', RPC, `Database ${ process.env.DATABASE_HOST}:${ process.env.DATABASE_PORT}/${process.env.DATABASE_SCHEMA}/${process.env.DATABASE_USER}/`)
 const wsProvider = new WsProvider(RPC);
 const cloverTypes = {
   AccountInfo: {
@@ -58,13 +61,18 @@ class Connection {
   api: any = null;
   entityManager: any = null;
   connection: any = null;
-  async init() {
-    if (!this.connection) { 
-      await connect()
+  async init(isNeedApi = true, isNeedDB = true) {
+    if (isNeedApi) {
+      this.api = this.api ? this.api : await ApiPromise.create({ provider: wsProvider, types: cloverTypes });
     }
-    this.api = this.api ? this.api : await ApiPromise.create({ provider: wsProvider, types: cloverTypes });
-    this.entityManager = this.entityManager ? this.entityManager : getManager('postgres');
-    this.connection = this.connection? this.connection : getConnection('postgres');
+    if (isNeedDB) {
+      if (!this.connection) { 
+        await connect()
+      }
+      this.entityManager = this.entityManager ? this.entityManager : getManager('postgres');
+      this.connection = this.connection? this.connection : getConnection('postgres');
+    }
+    
   }
 }
 
