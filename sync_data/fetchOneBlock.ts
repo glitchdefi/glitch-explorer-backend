@@ -33,9 +33,9 @@ class FetchOneBlock {
   lastLog = 0;
   lastBlock = 0;
   async init() {
-    await Connection.init()
+    await Connection.init(false, true, true)
     await fetchBalance.init()
-    this.api = Connection.api
+    this.api = Connection.httpApi
     this.entityManager = Connection.entityManager
     this.connection = Connection.connection
     this.isAuthorIds = isFunction(this.api.query.authorMapping?.authorIds); // TODO-MOONBEAM reevaluate in a month: 07/16/21

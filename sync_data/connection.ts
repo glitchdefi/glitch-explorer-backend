@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
 import { HeaderExtended } from '@polkadot/api-derive/types';
 import { createConnections, getConnection, getManager } from 'typeorm';
 import { Address, BalanceHistory, Block, DailySummary, Event, Extrinsic, Log, Transaction } from '../src/databases';
@@ -14,7 +14,7 @@ const connect = async (): Promise<void> => {
     database: process.env.DATABASE_NAME,
     schema: process.env.DATABASE_SCHEMA || `public`,
     logging: [
-      "query",
+      // "query",
       "error"],
     entities: [
       Block,
@@ -30,8 +30,8 @@ const connect = async (): Promise<void> => {
   }]);
 }
 const RPC = process.env.RPC || 'wss://rpc.polkadot.io'
-console.log('RPC', RPC, `Database ${ process.env.DATABASE_HOST}:${ process.env.DATABASE_PORT}/${process.env.DATABASE_SCHEMA}/${process.env.DATABASE_USER}/`)
-const wsProvider = new WsProvider(RPC);
+const HTTP = process.env.HTTP || 'https://rpc.polkadot.io'
+console.log('RPC', RPC, 'HTTP', HTTP,  `Database ${ process.env.DATABASE_HOST}:${ process.env.DATABASE_PORT}/${process.env.DATABASE_SCHEMA}/${process.env.DATABASE_USER}/`)
 const cloverTypes = {
   AccountInfo: {
     nonce: "Index",
@@ -59,11 +59,17 @@ export interface HeaderExtendedWithMapping extends HeaderExtended {
 
 class Connection {
   api: any = null;
+  httpApi: any = null;
   entityManager: any = null;
   connection: any = null;
-  async init(isNeedApi = true, isNeedDB = true) {
+  async init(isNeedApi = true, isNeedDB = true, isNeedHttpApi = false) {
     if (isNeedApi) {
+      const wsProvider = new WsProvider(RPC);
       this.api = this.api ? this.api : await ApiPromise.create({ provider: wsProvider, types: cloverTypes });
+    }
+    if (isNeedHttpApi) {
+      const httpProvider = new HttpProvider(HTTP)
+      this.httpApi = this.httpApi ? this.httpApi : await ApiPromise.create({ provider: httpProvider, types: cloverTypes });
     }
     if (isNeedDB) {
       if (!this.connection) { 
