@@ -13,6 +13,10 @@ export class Address {
   balance: string;
 
   @Index()
+  @Column({ name: 'last_block_index', nullable: true})
+  lastBlockIndex: number;
+
+  @Index()
   @Column({ name: 'created', type: 'timestamptz' })
   created: Date;
 }
