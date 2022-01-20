@@ -30,14 +30,14 @@ export class Block {
   @Column({ name: 'epoch' })
   epoch: number;
 
-  @Column({ name: 'weight' })
+  @Column({ name: 'weight', type: "numeric", default: 0 })
   weight: string;
   
   @Index()
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
 
-  @Column({ name: 'reward' })
+  @Column({ name: 'reward', type: "numeric", default: 0 })
   reward: string;
 
   @Column({ name: 'extrinsic_hash' })

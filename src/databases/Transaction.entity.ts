@@ -23,19 +23,19 @@ export class Transaction {
   @Column({ name: 'to' })
   to: string;
 
-  @Column({ name: 'value' })
+  @Column({ name: 'value', type: "numeric", default: 0 })
   value: string;
 
-  @Column({ name: 'weight' })
+  @Column({ name: 'weight', type: "numeric", default: 0 })
   weight: string;
   @Index()
   @Column({ name: 'type' })
   type: string;
 
-  @Column({ name: 'fee' })
+  @Column({ name: 'fee', type: "numeric", default: 0 })
   fee: string;
 
-  @Column({ name: 'tip' })
+  @Column({ name: 'tip', type: "numeric", default: 0 })
   tip: string;
   @Index()
   @Column({ name: 'status', default: "success" })

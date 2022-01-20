@@ -9,7 +9,7 @@ export class Address {
   evmAddress: string;
 
   @Index()
-  @Column({ name: 'balance', type: "bigint", default: 0 })
+  @Column({ name: 'balance', type: "numeric", default: 0 })
   balance: string;
 
   @Index()

@@ -10,7 +10,7 @@ export class BalanceHistory {
   address: string;
 
   @Index()
-  @Column({ name: 'balance' })
+  @Column({ name: 'balance', type: "numeric", default: 0 })
   balance: string;
 
   @Index()
