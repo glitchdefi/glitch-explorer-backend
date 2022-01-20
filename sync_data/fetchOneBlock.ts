@@ -325,7 +325,7 @@ class FetchOneBlock {
       let addressDatas = []
       let accountAddresses = Object.keys(accounts)
       for (let [ai, accAdd] of accountAddresses.entries()) {
-        addressDatas.push({ address: accAdd, role: 1, created: time })
+        addressDatas.push({ address: accAdd, created: time })
         let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
         if (stored) {
           continue

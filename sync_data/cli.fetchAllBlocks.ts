@@ -75,8 +75,6 @@ const run = async (): Promise<void> => {
   await Connection.init()
   fetchLastBlock()
   fetchOldBLock()
-  fetchFee()
-  fetchBalance()
 }
 
 run()

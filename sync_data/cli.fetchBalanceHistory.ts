@@ -1,5 +1,5 @@
 import { getManager } from 'typeorm';
-import { BalanceHistory, Transaction } from '../src/databases';
+import { Address, BalanceHistory, Transaction } from '../src/databases';
 import Connection from './connection'
 import fetchBalance from './fetchBalance';
 
@@ -44,6 +44,7 @@ const fetchBalanceHistory = async () => {
     const headerHash = '0x' + balanceHistory.headerHash
     let balance = await fetchBalance.fetchBalance(balanceHistory.address, headerHash)
     await Connection.connection.createQueryBuilder().update(BalanceHistory).set({ balance: balance.toString(), fetchStatus: 1 }).where("id = :id", { id: balanceHistory.id }).execute()
+    await Connection.connection.createQueryBuilder().update(Address).set({ balance: balance.toString() }).where("address = :address", { address: balanceHistory.address }).execute()
   }
   let funcs = rows.map(transaction => fetch(transaction))
   await Promise.all(funcs)

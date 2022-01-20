@@ -9,6 +9,7 @@ export class BalanceHistory {
   @Column({ name: 'address' })
   address: string;
 
+  @Index()
   @Column({ name: 'balance' })
   balance: string;
 
@@ -18,6 +19,8 @@ export class BalanceHistory {
 
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
+  
+  @Index()
   @Column( { name: 'fetch_status' })
   fetchStatus: number;
   

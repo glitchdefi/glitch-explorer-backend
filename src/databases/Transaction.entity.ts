@@ -43,7 +43,8 @@ export class Transaction {
   @Index()
   @Column({ name: 'block_index', default: -1 })
   blockIndex: number;
-
+  
+  @Index()
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
   
