@@ -31,7 +31,7 @@ const fetchOldBLock = async () => {
         index: "DESC",
     },
   });
-  let lastBlockHeight = (lastBlock ? lastBlock.index : 18)
+  let lastBlockHeight = (lastBlock ? lastBlock.index : 0)
   if (lastBlockHeight === 0) {
     console.log("---No Last Block found. Retry in 10s")
     await wait(10000)
