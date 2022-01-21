@@ -5,6 +5,7 @@ import { BN, formatNumber, isFunction } from '@polkadot/util';
 import { Log, Block, Event, Extrinsic, Transaction, BalanceHistory, Address } from '../src/databases';
 import Connection from './connection'
 import fetchBalance from './fetchBalance';
+import axios from 'axios'
 require('dotenv').config()
 const fs = require('fs');
 const MAX_HEADERS = 75;
@@ -21,6 +22,7 @@ export interface HeaderExtendedWithMapping extends HeaderExtended {
 
 class FetchOneBlock {
   api: any;
+  axiosInstance: any;
   entityManager: any;
   connection: any;
   byAuthor: Record<string, string> = {};
@@ -42,8 +44,23 @@ class FetchOneBlock {
     this.isAuthorMappingWithDeposit = isFunction(
       this.api.query.authorMapping?.mappingWithDeposit,
     );
+    this.axiosInstance = axios.create({
+      baseURL: process.env.HTTP,
+      timeout: 100000,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
+  async _getEthBlockByNumber(blockNumber) {
+    try {
+      let response = await this.axiosInstance.post('/', { "jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": [blockNumber.toHex(), true], "id": blockNumber.toNumber() })
+      return response.data?.result
+    } catch (error) {
+      console.log('_getEthBlockByNumber', error)
+      return {}
+    }
+
+  }
   extractEventDetails(events?: EventRecord[]): [BN?, BN?, BN?] {
     return events
       ? events.reduce(
@@ -213,6 +230,37 @@ class FetchOneBlock {
       }
 
       let accounts = {}
+      let ethAccounts = {}
+      // check evm
+      const ethTranCount = await api.rpc.eth.getBlockTransactionCountByNumber(blockNumber.toHex())
+      if (ethTranCount.toNumber() > 0) {
+        const ethBlock = await this._getEthBlockByNumber(blockNumber)
+        let ethTransactions = ethBlock?.transactions
+        ethTransactions.forEach(ethTransaction => {
+          let transactionData = {
+            hash: ethTransaction.hash,
+            from: ethTransaction.from,
+            to: ethTransaction.to,
+            value: BigInt(ethTransaction.value).toString(),
+            weight: '0',
+            fee: BigInt(ethTransaction.gas).toString(),
+            type: 'eth.transfer',
+            time: time,
+            tip: '0',
+            extrinsicIndex: extrinsic.id,
+            blockIndex: blockNumber.toNumber(),
+            status: "success",
+            fetchStatus: 1,
+            exHash: '',
+          };
+
+          transactionDatas.push(transactionData)
+          ethAccounts[transactionData.from] = transactionData.from
+          ethAccounts[transactionData.to] = transactionData.to
+        })
+      }
+
+
       //extract transaction
       const _buildTransactionData = async (section, method, ex, eventEntity, signer, args, dispatchInfo, success) => {
         if (section === 'balances') {
@@ -243,8 +291,10 @@ class FetchOneBlock {
               exHash: ex.toHex().toString().substring(2),
             };
             transactionDatas.push(transactionData)
-            accounts[transactionData.from] = transactionData.from
-            accounts[transactionData.to] = transactionData.to
+            if (!accounts[transactionData.from])
+              accounts[transactionData.from] = { address: transactionData.from, created: time }
+            if (!accounts[transactionData.to])
+              accounts[transactionData.to] = { address: transactionData.to, created: time }
           }
         }
       }
@@ -321,11 +371,26 @@ class FetchOneBlock {
       }
       // console.log('--extract', Date.now() - startExtract)
       // startTime = Date.now()
+
+      //extract eth address 
+      let ethAccountArrs = Object.keys(ethAccounts)
+      for (let [ai, ethAccAdd] of ethAccountArrs.entries()) {
+        let glitchAddress = (await api.query.evmAccounts.accounts(ethAccAdd))?.toString()
+        if (glitchAddress) {
+          if (accounts[glitchAddress]) {
+            accounts[glitchAddress].evmAddress = ethAccAdd
+          } else {
+            accounts[glitchAddress] = ({ address: glitchAddress, evmAddress: ethAccAdd, created: time })
+          }
+        }
+        
+      }
+
       let balanceHistoryDatas = []
       let addressDatas = []
       let accountAddresses = Object.keys(accounts)
       for (let [ai, accAdd] of accountAddresses.entries()) {
-        addressDatas.push({ address: accAdd, created: time })
+        addressDatas.push(accounts[accAdd])
         let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
         if (stored) {
           continue
@@ -334,7 +399,11 @@ class FetchOneBlock {
         balanceHistoryDatas.push({ address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time, fetchStatus: 0, headerHash: lastHeader.hash.toString().substring(2) })
       }
       await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
-      await this.connection.createQueryBuilder().insert().into(Address).values(addressDatas).onConflict(`("address") DO NOTHING`).execute()
+      await this.connection.createQueryBuilder().insert().into(Address).values(addressDatas)
+        .orUpdate({
+        conflict_target: ["glitch_address"],
+        overwrite: ["evm_address"],
+      }).execute()
 
       // console.log('--balance', Date.now() - startExtract)
       // startTime = Date.now()

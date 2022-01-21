@@ -1,11 +1,13 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn, Unique } from 'typeorm';
 @Entity({ name: 'address' })
+@Unique(["address"])
+@Unique(["evmAddress"])
 export class Address {
   @PrimaryGeneratedColumn({ name: 'id' })
   id: number;
 
   @Index()
-  @Column({ name: 'address', nullable: true })
+  @Column({ name: 'glitch_address', nullable: true })
   address: string;
   
   @Index()

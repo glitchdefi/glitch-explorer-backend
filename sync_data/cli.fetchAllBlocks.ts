@@ -8,14 +8,14 @@ const fetchLastBlock = () => {
   let ChildProcessPath = path.resolve(__dirname , "cli.fetchLastBlocks.ts")
   const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
 }
-const fetchFee = () => {
-  let ChildProcessPath = path.resolve(__dirname , "cli.fetchTransactionFee.ts")
-  const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
-}
-const fetchBalance = () => {
-  let ChildProcessPath = path.resolve(__dirname , "cli.fetchBalanceHistory.ts")
-  const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
-}
+// const fetchFee = () => {
+//   let ChildProcessPath = path.resolve(__dirname , "cli.fetchTransactionFee.ts")
+//   const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
+// }
+// const fetchBalance = () => {
+//   let ChildProcessPath = path.resolve(__dirname , "cli.fetchBalanceHistory.ts")
+//   const proc = fork(ChildProcessPath, ["ts-node"], { execArgv: [ path.resolve(__dirname , "../node_modules/ts-node/dist/bin.js")] })
+// }
 const wait = (time = 1000): Promise<void> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -31,7 +31,7 @@ const fetchOldBLock = async () => {
         index: "DESC",
     },
   });
-  let lastBlockHeight = (lastBlock ? lastBlock.index : 0)
+  let lastBlockHeight = (lastBlock ? lastBlock.index : 18)
   if (lastBlockHeight === 0) {
     console.log("---No Last Block found. Retry in 10s")
     await wait(10000)
