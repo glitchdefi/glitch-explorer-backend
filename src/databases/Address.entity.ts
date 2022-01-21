@@ -1,7 +1,11 @@
-import { Column, Entity, Index, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 @Entity({ name: 'address' })
 export class Address {
-  @PrimaryColumn({ name: 'address' })
+  PrimaryGeneratedColumn({ name: 'id' })
+  id: number;
+
+  @Index()
+  @Column({ name: 'address', nullable: true })
   address: string;
   
   @Index()
