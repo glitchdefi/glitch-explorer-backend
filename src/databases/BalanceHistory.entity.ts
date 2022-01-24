@@ -10,7 +10,7 @@ export class BalanceHistory {
   address: string;
 
   @Index()
-  @Column({ name: 'balance', type: "numeric", default: 0 })
+  @Column({ name: 'balance', type: 'numeric', default: 0 })
   balance: string;
 
   @Index()
@@ -19,11 +19,11 @@ export class BalanceHistory {
 
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
-  
+
   @Index()
-  @Column( { name: 'fetch_status' })
+  @Column({ name: 'fetch_status', nullable: true })
   fetchStatus: number;
-  
-  @Column({ name: 'header_hash' })
+
+  @Column({ name: 'header_hash', nullable: true })
   headerHash: string;
 }

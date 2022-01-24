@@ -3,9 +3,16 @@ import { ConfigModule } from '@nestjs/config';
 import { BlockModule } from './modules/block/block.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
 import { LogModule } from './modules/log/log.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), BlockModule, TransactionModule, LogModule],
+  imports: [
+    ConfigModule.forRoot(),
+    BlockModule,
+    TransactionModule,
+    LogModule,
+    DashboardModule,
+  ],
   controllers: [],
   providers: [],
 })

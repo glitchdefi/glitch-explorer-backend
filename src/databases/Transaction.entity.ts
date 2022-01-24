@@ -12,7 +12,7 @@ import { Extrinsic } from './Extrinsic.entity';
 export class Transaction {
   @PrimaryGeneratedColumn({ name: 'id' })
   id: number;
-  
+
   @Index()
   @Column({ name: 'hash' })
   hash: string;
@@ -23,31 +23,30 @@ export class Transaction {
   @Column({ name: 'to' })
   to: string;
 
-  @Column({ name: 'value', type: "numeric", default: 0 })
+  @Column({ name: 'value', type: 'numeric', default: 0 })
   value: string;
 
-  @Column({ name: 'weight', type: "numeric", default: 0 })
+  @Column({ name: 'weight', type: 'numeric', default: 0 })
   weight: string;
   @Index()
   @Column({ name: 'type' })
   type: string;
 
-  @Column({ name: 'fee', type: "numeric", default: 0 })
+  @Column({ name: 'fee', type: 'numeric', default: 0 })
   fee: string;
 
-  @Column({ name: 'tip', type: "numeric", default: 0 })
+  @Column({ name: 'tip', type: 'numeric', default: 0 })
   tip: string;
   @Index()
-  @Column({ name: 'status', default: "success" })
+  @Column({ name: 'status', default: 'success' })
   status: string;
   @Index()
   @Column({ name: 'block_index', default: -1 })
   blockIndex: number;
-  
+
   @Index()
   @Column({ name: 'time', type: 'timestamptz' })
   time: Date;
-  
 
   @ManyToOne(() => Extrinsic, (extrinsic: Extrinsic) => extrinsic.tx, {
     eager: true,
@@ -57,8 +56,9 @@ export class Transaction {
   @JoinColumn({ name: 'extrinsic_index' })
   extrinsicIndex?: Extrinsic;
 
-  @Column({ name: 'ex_hash' })
+  @Column({ name: 'ex_hash', nullable: true })
   exHash: string;
-  @Column( { name: 'fetch_status' })
+
+  @Column({ name: 'fetch_status', nullable: true })
   fetchStatus: number;
 }
