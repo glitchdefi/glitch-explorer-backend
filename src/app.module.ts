@@ -4,6 +4,8 @@ import { BlockModule } from './modules/block/block.module';
 import { TransactionModule } from './modules/transaction/transaction.module';
 import { LogModule } from './modules/log/log.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AddressModule } from './modules/address/address.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     TransactionModule,
     LogModule,
     DashboardModule,
+    AddressModule,
+    SearchModule,
   ],
   controllers: [],
   providers: [],
