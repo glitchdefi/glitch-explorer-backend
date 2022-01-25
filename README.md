@@ -45,6 +45,47 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## Start Fetch data from database
+
+Config .env file
+```bash
+// Database configuration
+DATABASE_USER=postgres
+DATABASE_PASSWORD=postgres
+DATABASE_NAME=postgres
+DATABASE_PORT=5432
+DATABASE_HOST=postgres_db_1
+#Specific schema. Default is public
+DATABASE_SCHEMA=test
+# Chain endpoint
+RPC=ws://localhost:9944
+HTTP=http://localhost:9933
+# fetch from zero or continue fetch from last block in database. Default true. If block is fetched in database, the block will be skipped.
+FETCH_FROM_ZERO=true 
+# Number of fetch old blocks process. It depends on the server 's Memory and CPU. Recommend at least 2GB memory for each process.
+MULTI_FETCH=1
+# Starting block index to fetch old block process
+START_FROM=0
+# Debug Log
+LOGALL=false
+# Flag to skip fetch chain's log. Default is false
+SKIP_LOG=false
+# Flag to skip fetch chain's event. Default is false
+SKIP_EVENT=false
+```
+
+Check `ecosystem.config.js` file if you want to disable other process such as `fetchBalance`, `fetch transaction fee`, `summary daily status`, `fetch linked evm address`. You can stop this process later with `pm2`
+
+Run `pm2` process to start fetching
+
+```bash
+pm2 start ecosystem.config.js
+```
+
+If `pm2` is not installed. 
+```bash
+npm install -g pm2
+```
 ## Test
 
 ```bash
