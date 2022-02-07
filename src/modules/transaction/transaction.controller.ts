@@ -15,7 +15,7 @@ class TransactionController {
   constructor(private transactionService: TransactionService) {}
 
   @Get('list')
-  async getTransactionsList(@Query() query: any): Promise<any> {
+  async getTransactionList(@Query() query: any): Promise<any> {
     const pageSize = Number(query.page_size) || 15;
     const pageIndex = Number(query.page_index) || 1;
 

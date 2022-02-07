@@ -32,9 +32,8 @@ export class SearchService {
 
       const transactions = await this.transactionRepository
         .createQueryBuilder('transaction')
-        .leftJoinAndSelect('transaction.block', 'block')
-        .leftJoinAndSelect('transaction.from', 'from')
-        .leftJoinAndSelect('transaction.to', 'to')
+        .leftJoinAndSelect('transaction.extrinsicIndex', 'extrinsic')
+        .leftJoinAndSelect('extrinsic.block', 'block')
         .where('transaction.hash = :term', { term })
         .getMany();
 
@@ -50,6 +49,7 @@ export class SearchService {
 
       const height = Number(term);
       if (!isNaN(height)) {
+        console.log(height);
         const blocks = await this.blockRepository.find({
           index: height,
         });
@@ -63,6 +63,7 @@ export class SearchService {
           };
         }
       }
+
       return null;
     } catch (error) {
       this.logger.error(error);

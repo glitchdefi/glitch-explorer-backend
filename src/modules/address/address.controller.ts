@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 // import { GetAddressDto, GetAddressListDto } from './dto';
 import { AddressService } from './address.service';
 // import { AddressListRO, AddressRO, LatestAddressHeightRO } from './block.interface';
@@ -30,50 +30,86 @@ export class AddressController {
     return result;
   }
 
-  // @Get('count')
-  // async getAddressCount(): Promise<number> {
-  //   let result: number;
+  @Get(':hash')
+  async getAddress(@Param() params): Promise<any> {
+    const hash = params.hash;
 
-  //   try {
-  //     result = await this.blockService.getAddressCount();
-  //   } catch (error) {
-  //     throw new InternalServerErrorException();
-  //   }
+    let result: any;
 
-  //   return result;
-  // }
+    try {
+      result = await this.addressService.getAddress(hash);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
 
-  // @Get()
-  // async getAddress(@Query() query: any): Promise<any> {
-  //   const height = Number(query?.height);
+    if (!result) return {};
 
-  //   if (Number.isNaN(height) || height <= 0) throw new BadRequestException();
+    return result;
+  }
 
-  //   let result: any;
+  @Get(':hash/tx')
+  async getTransactionList(@Param() params, @Query() query: any): Promise<any> {
+    const hash = params.hash;
+    const pageSize = Number(query.page_size) || 15;
+    const pageIndex = Number(query.page_index) || 1;
 
-  //   try {
-  //     result = await this.blockService.getAddress(height);
-  //   } catch (error) {
-  //     throw new InternalServerErrorException();
-  //   }
+    if (pageSize <= 0 || pageIndex <= 0) throw new BadRequestException();
 
-  //   if (!result) return {};
+    let result: any;
 
-  //   return result;
-  // }
+    try {
+      result = await this.addressService.getTransactionList(
+        hash,
+        pageSize,
+        pageIndex,
+        true,
+      );
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
 
-  // @Get('head_block_number')
-  // async getLatestAddressHeight(): Promise<any> {
-  //   let result: any;
+    return result;
+  }
 
-  //   try {
-  //     result = await this.blockService.getLatestAddressHeight();
-  //   } catch (error) {
-  //     throw new InternalServerErrorException();
-  //   }
+  @Get(':hash/balance_tx')
+  async getBalanceTransactionList(
+    @Param() params,
+    @Query() query: any,
+  ): Promise<any> {
+    const hash = params.hash;
+    const pageSize = Number(query.page_size) || 15;
+    const pageIndex = Number(query.page_index) || 1;
 
-  //   if (!result) throw new NotFoundException();
+    if (pageSize <= 0 || pageIndex <= 0) throw new BadRequestException();
 
-  //   return result;
-  // }
+    let result: any;
+
+    try {
+      result = await this.addressService.getTransactionList(
+        hash,
+        pageSize,
+        pageIndex,
+        false,
+      );
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    return result;
+  }
+
+  @Get(':hash/balance_history')
+  async getBalanceHistory(@Param() params): Promise<any> {
+    const hash = params.hash;
+
+    let result: any;
+
+    try {
+      result = await this.addressService.getBalanceHistory(hash);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    return result;
+  }
 }
