@@ -14,12 +14,12 @@ class FetchBalance {
   entityManager: any;
   connection: any;
   async init() {
-    await Connection.init()
-    this.api = Connection.api
+    await Connection.init(false, true, true)
+    this.api = Connection.httpApi
   }
 
   async fetchBalance(address: string, parentHash: any): Promise<string> {
-    const api = this.api || Connection.api
+    const api = this.api || Connection.httpApi
     const balance = await api.query.system.account.at(parentHash, address);
     let {data} = balance
 

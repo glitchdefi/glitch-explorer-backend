@@ -72,7 +72,7 @@ const fetchOldBLock = async () => {
   await fetchOldBLock()
 }
 const run = async (): Promise<void> => {
-  await Connection.init()
+  await Connection.init(false, true, false)
   fetchLastBlock()
   fetchOldBLock()
 }

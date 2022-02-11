@@ -12,15 +12,6 @@ const wait = (time = 1000): Promise<void> => {
   });
 }
 
-const getBlockHash = async (height) => {
-  let api = Connection.api
-  if (blockHashes[height]) {
-    return blockHashes[height]
-  }
-  const blockHash = await api.rpc.chain.getBlockHash(height)
-  blockHashes[height] = blockHash
-  return blockHash
-}
 const fetchBalanceHistory = async () => {
   // get transaction not fetched fee
   let entityManager = getManager('postgres');
@@ -51,7 +42,7 @@ const fetchBalanceHistory = async () => {
   await fetchBalanceHistory()
 }
 const run = async (): Promise<void> => {
-  await Connection.init()
+  await Connection.init(false, true, true)
   fetchBalanceHistory()
 }
 

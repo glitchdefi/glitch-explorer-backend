@@ -12,7 +12,7 @@ const wait = (time = 1000): Promise<void> => {
 }
 
 const getBlockHash = async (height) => {
-  let api = Connection.api
+  let api = Connection.httpApi
   if (blockHashes[height]) { 
     return blockHashes[height]
   }
@@ -40,10 +40,11 @@ const fetchTransactionFee = async () => {
     return;
   }
   const fetchFee = async (transaction) => {
-    if (Connection.api.rpc.payment.queryFeeDetails) {
+    let api = Connection.httpApi
+    if (api.rpc.payment.queryFeeDetails) {
       const ex = '0x' + transaction.exHash
       const blockHash = await getBlockHash(transaction.height)
-      const queryFeeDetails = await Connection.api.rpc.payment.queryInfo(
+      const queryFeeDetails = await api.rpc.payment.queryInfo(
         ex,
         blockHash,
       );
@@ -59,7 +60,7 @@ const fetchTransactionFee = async () => {
   await fetchTransactionFee()
 }
 const run = async (): Promise<void> => {
-  await Connection.init()
+  await Connection.init(false, true, true)
   fetchTransactionFee()
 }
 
