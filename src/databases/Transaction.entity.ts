@@ -5,10 +5,12 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Unique,
 } from 'typeorm';
 import { Extrinsic } from './Extrinsic.entity';
 
 @Entity({ name: 'transaction' })
+@Unique(['hash'])
 export class Transaction {
   @PrimaryGeneratedColumn({ name: 'id' })
   id: number;

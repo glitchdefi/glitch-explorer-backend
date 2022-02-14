@@ -8,7 +8,7 @@ const wait = (time = 1000): Promise<void> => {
     }, time);
   });
 }
-
+const THRESHOLD = 100
 const fetchEvmAddress = async () => {
   // get transaction not fetched fee
   let entityManager = getManager('postgres');
@@ -19,14 +19,17 @@ const fetchEvmAddress = async () => {
     order: {
       id: "DESC",
     },
-    take: 100
+    take: THRESHOLD
   });
-  console.log(rows.length)
+  console.log("Find:", rows.length, "addresses")
+  let waitTime = 1000
   if (rows.length === 0) {
     console.log('--- no evmAddress to fetch, wait 100s')
     await wait(100000)
     await fetchEvmAddress()
     return;
+  } else if(rows.length < THRESHOLD) {
+    waitTime = 60000 //60s
   }
   let api = Connection.httpApi
   const fetch = async (addressObj) => {
@@ -43,7 +46,7 @@ const fetchEvmAddress = async () => {
   }
   let funcs = rows.map(each => fetch(each))
   await Promise.all(funcs)
-  await wait(1000)
+  await wait(waitTime)
   await fetchEvmAddress()
 }
 const run = async (): Promise<void> => {

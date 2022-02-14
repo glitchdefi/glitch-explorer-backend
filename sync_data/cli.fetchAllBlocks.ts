@@ -50,8 +50,8 @@ const fetchOldBLock = async () => {
     let to = Math.min(i + step, lastBlockHeight)
     let [blocks, count] = await entityManager.findAndCount(Block, { index: Between(from, to) });
     let processTitle = `Process No.${spawnProcess + 1}/${cpuCount}`
-    if (count >= step) {
-      console.log(`${new Date().toISOString()} fetched from ${i} to  ${to}\n-----------------------------------------------------\n`)
+    if (count > step) {
+      console.log(`${new Date().toISOString()} fetched ${count} from ${i} to  ${to}\n-----------------------------------------------------\n`)
       continue
     } else {
       console.log(`${new Date().toISOString()}  Fork ${processTitle} is fetching from ${i} to  ${to}, in db ${count}`)

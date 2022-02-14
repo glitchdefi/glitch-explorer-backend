@@ -239,8 +239,8 @@ class FetchOneBlock {
         ethTransactions.forEach(ethTransaction => {
           let transactionData = {
             hash: ethTransaction.hash,
-            from: ethTransaction.from,
-            to: ethTransaction.to,
+            from: ethTransaction.from || "null",
+            to: ethTransaction.to || "null",
             value: BigInt(ethTransaction.value).toString(),
             weight: '0',
             fee: BigInt(ethTransaction.gas).toString(),
@@ -253,10 +253,9 @@ class FetchOneBlock {
             fetchStatus: 1,
             exHash: '',
           };
-
           transactionDatas.push(transactionData)
-          ethAccounts[transactionData.from] = transactionData.from
-          ethAccounts[transactionData.to] = transactionData.to
+          if(transactionData.from !== "null") ethAccounts[transactionData.from] = transactionData.from
+          if(transactionData.to !== "null") ethAccounts[transactionData.to] = transactionData.to
         })
       }
 
@@ -410,7 +409,7 @@ class FetchOneBlock {
 
       if (isFetchEvent) await this.connection.createQueryBuilder().insert().into(Event).values(eventDatas).execute()
 
-      await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas).execute()
+      await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas) .onConflict(`("hash") DO NOTHING`).execute()
       await this.connection.createQueryBuilder().update(Block).set({ txNum: transactionDatas.length }).where("index = :index", { index: blockNumber.toNumber() }).execute()
 
       // insert log
@@ -446,12 +445,12 @@ class FetchOneBlock {
     });
   }
 
-  async fetchBlock(height: number): Promise<boolean> {
+  async fetchBlock(height: number, force = false): Promise<boolean> {
     try {
       const _startTime = Date.now()
       await this.init()
       const block = await this.entityManager.findOne(Block, height);
-      if (block) {
+      if (block && force === false) {
         if (process.env.LOGALL === 'true') console.log(`${new Date().toISOString()} fetchBlock fromDB success: height ${height}`);
         return true;
       }
