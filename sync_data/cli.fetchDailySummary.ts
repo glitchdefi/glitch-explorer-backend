@@ -59,7 +59,7 @@ const fetchSummary = async () => {
   MIN(INDEX) AS min_index, 
   extract(epoch from MAX(TIME)) -  extract(epoch from MIN(TIME))  AS totalBlockTime ,
   (max(INDEX) - MIN(INDEX) + 1) AS totalBlockNum,
-  (extract(epoch from MAX(TIME)) -  extract(epoch from MIN(TIME)) )/ (max(INDEX) - MIN(INDEX) + 1) AS ave,
+  (extract(epoch from MAX(TIME)) -  extract(epoch from MIN(TIME)) )/ (max(INDEX) - MIN(INDEX)) AS ave,
   date_trunc('day', time) as day 
   FROM ${schema}.block
   WHERE INDEX > 0
