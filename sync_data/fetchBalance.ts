@@ -25,6 +25,13 @@ class FetchBalance {
 
     return data.free.add(data.reserved).add(data.miscFrozen).add(data.feeFrozen)
   }
+
+  async fetchEthBalance(address: string, blockNumber: any): Promise<string> {
+    const api = this.api || Connection.httpApi
+    const balance = await api.rpc.eth.getBalance(address, blockNumber)
+    console.log(address,blockNumber, balance.toString())
+    return balance.toString()
+  }
 }
 
 const obj = new FetchBalance();

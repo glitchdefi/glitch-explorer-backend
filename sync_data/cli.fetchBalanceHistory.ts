@@ -33,9 +33,16 @@ const fetchBalanceHistory = async () => {
   }
   const fetch = async (balanceHistory) => {
     const headerHash = '0x' + balanceHistory.headerHash
-    let balance = await fetchBalance.fetchBalance(balanceHistory.address, headerHash)
+    let balance
+    if (balanceHistory.address.startsWith("0x")) {
+      balance = await fetchBalance.fetchEthBalance(balanceHistory.address, balanceHistory.blockIndex)
+      await Connection.connection.createQueryBuilder().update(Address).set({ balance: balance.toString(), lastBlockIndex:  balanceHistory.blockIndex}).where("evmAddress = :address", { address: balanceHistory.address }).execute()
+    } else {
+      balance = await fetchBalance.fetchBalance(balanceHistory.address, headerHash)
+      await Connection.connection.createQueryBuilder().update(Address).set({ balance: balance.toString(), lastBlockIndex:  balanceHistory.blockIndex}).where("address = :address", { address: balanceHistory.address }).execute()
+    }
     await Connection.connection.createQueryBuilder().update(BalanceHistory).set({ balance: balance.toString(), fetchStatus: 1 }).where("id = :id", { id: balanceHistory.id }).execute()
-    await Connection.connection.createQueryBuilder().update(Address).set({ balance: balance.toString(), lastBlockIndex:  balanceHistory.blockIndex}).where("address = :address", { address: balanceHistory.address }).execute()
+  
   }
   let funcs = rows.map(transaction => fetch(transaction))
   await Promise.all(funcs)
