@@ -381,6 +381,8 @@ class FetchOneBlock {
           } else {
             accounts[glitchAddress] = ({ address: glitchAddress, evmAddress: ethAccAdd, created: time })
           }
+        } else {
+          accounts[ethAccAdd] = ({ evmAddress: ethAccAdd, created: time })
         }
         
       }
