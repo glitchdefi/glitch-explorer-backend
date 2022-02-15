@@ -18,7 +18,14 @@ export class SearchService {
   async search(term: string): Promise<any> {
     try {
       const wallets = await this.addressRepository.find({
-        address: term,
+        where: [
+          {
+            address: term,
+          },
+          {
+            evmAddress: term,
+          },
+        ],
       });
       if (wallets.length) {
         return {
