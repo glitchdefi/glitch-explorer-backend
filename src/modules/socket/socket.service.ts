@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Block, Transaction } from '../../databases';
+import { ApiPromise } from '@polkadot/api';
 
 @Injectable()
 export class SocketService {
@@ -62,6 +63,18 @@ export class SocketService {
   async getTxCount(): Promise<number> {
     try {
       return await this.transactionRepository.count();
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async getFinalizedBlockNumber(api: ApiPromise): Promise<number> {
+    try {
+      const blockHash = (await api.rpc.chain.getFinalizedHead()).toString();
+      const block = await api.rpc.chain.getBlock(blockHash);
+
+      return Number(block.block.header.number.toString().replace(',', ''));
     } catch (error) {
       this.logger.error(error);
       throw error;
