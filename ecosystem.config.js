@@ -1,9 +1,13 @@
 module.exports = {
   apps: [{
-    name: "fetch",
-    script: "yarn fetch",
+    name: "fetchLastBlock",
+    script: "npx ts-node sync_data/cli.fetchLatestBlocks.ts",
     cron_restart: "0 */2 * * *"
   }, {
+    name: "fetchOldBlock",
+    script: "npx ts-node sync_data/cli.fetchOldBlocks.ts",
+    cron_restart: "0 */2 * * *"
+  },{
     name: "fetchBalance",
     script: "npx ts-node sync_data/cli.fetchBalanceHistory.ts",
     cron_restart: "0 0 * * *"
