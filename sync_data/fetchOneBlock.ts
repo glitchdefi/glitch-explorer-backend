@@ -389,9 +389,14 @@ class FetchOneBlock {
 
       let balanceHistoryDatas = []
       let addressDatas = []
+      let evmAddressDatas = []
       let accountAddresses = Object.keys(accounts)
       for (let [ai, accAdd] of accountAddresses.entries()) {
-        addressDatas.push(accounts[accAdd])
+        if (accAdd.startsWith('0x')) {
+          evmAddressDatas.push(accounts[accAdd])
+        } else {
+          addressDatas.push(accounts[accAdd])
+        }
         let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
         if (stored) {
           continue
@@ -404,6 +409,12 @@ class FetchOneBlock {
         .orUpdate({
         conflict_target: ["glitch_address"],
         overwrite: ["evm_address"],
+        }).execute()
+      
+        await this.connection.createQueryBuilder().insert().into(Address).values(evmAddressDatas)
+        .orUpdate({
+        conflict_target: ["evm_address"],
+        overwrite: ["glitch_address"],
       }).execute()
 
       // console.log('--balance', Date.now() - startExtract)
