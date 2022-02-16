@@ -11,7 +11,7 @@ import {
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { Socket } from 'socket.io';
 import { SocketService } from './socket.service';
-import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ApiPromise, HttpProvider } from '@polkadot/api';
 
 @WebSocketGateway()
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -26,7 +26,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     let previousFinalizedBlockNumber = 0;
 
     const callback = async () => {
-      const httpProvider = new WsProvider(process.env.RPC);
+      const httpProvider = new HttpProvider(process.env.HTTP);
       const api = await ApiPromise.create({ provider: httpProvider });
       const blockCount = await this.socketService.getBlockCount();
       const txCount = await this.socketService.getTxCount();
