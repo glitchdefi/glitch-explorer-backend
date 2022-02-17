@@ -24,12 +24,12 @@ const fetchEvmAddress = async () => {
   console.log("Find:", rows.length, "addresses")
   let waitTime = 1000
   if (rows.length === 0) {
-    console.log('--- no evmAddress to fetch, wait 100s')
-    await wait(100000)
+    console.log('--- no evmAddress to fetch, wait 3s')
+    await wait(3000)
     await fetchEvmAddress()
     return;
   } else if(rows.length < THRESHOLD) {
-    waitTime = 60000 //60s
+    waitTime = 3000 //60s
   }
   let api = Connection.httpApi
   const fetch = async (addressObj) => {

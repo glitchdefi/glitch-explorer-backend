@@ -26,8 +26,8 @@ const fetchBalanceHistory = async () => {
   });
   console.log(rows.length)
   if (rows.length === 0) {
-    console.log('--- no balanceHistory to fetch, wait 100s')
-    await wait(100000)
+    console.log('--- no balanceHistory to fetch, wait 3s')
+    await wait(3000)
     await fetchBalanceHistory()
     return;
   }
