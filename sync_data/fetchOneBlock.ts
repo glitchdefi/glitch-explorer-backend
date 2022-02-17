@@ -376,13 +376,15 @@ class FetchOneBlock {
       let ethAccountArrs = Object.keys(ethAccounts)
       for (let [ai, ethAccAdd] of ethAccountArrs.entries()) {
         let glitchAddress = (await api.query.evmAccounts.accounts(ethAccAdd))?.toString()
+        console.log('--glitchAddress', glitchAddress, ethAccAdd)
         // is account linked
         let isAccountLinked = !!glitchAddress
         if (isAccountLinked) {
           // find in DB if evmaddress inserted 
           let evmAddressEntity = await this.entityManager.findOne(Address, { where: { evmAddress: ethAccAdd } })
-          if (evmAddressEntity) { // update glitch address if account is linked
-            await this.connection.createQueryBuilder().update(Address).set({ address: glitchAddress }).where("id = :id", { id: evmAddressEntity.id }).execute()
+          let glitchAddressEntity =  await this.entityManager.findOne(Address, { where: { address: glitchAddress } })
+          if (evmAddressEntity && glitchAddressEntity) { // update glitch address if account is linked
+              await this.connection.createQueryBuilder().delete().from(Address).where("id = :id", { id: Math.max(evmAddressEntity.id, glitchAddressEntity.id) }).execute()
           } 
           // store in array to process balance history
           if (accounts[glitchAddress]) {
