@@ -22,8 +22,8 @@ class FetchBalance {
     const api = this.api || Connection.httpApi
     const balance = await api.query.system.account.at(parentHash, address);
     let {data} = balance
-    console.log(`fetchBalance ${address} parentHash ${parentHash} free ${data.free} reverse ${data.reverse} miscFrozen ${data.miscFrozen} feeFrozen ${data.feeFrozen}`)
-    return data.free.add(data.reserved).add(data.miscFrozen).add(data.feeFrozen)
+    // console.log(`fetchBalance ${address} parentHash ${parentHash} free ${data.free} reverse ${data.reverse} miscFrozen ${data.miscFrozen} feeFrozen ${data.feeFrozen}`)
+    return data.free.add(data.reserved)
   }
 
   async fetchEthBalance(address: string, blockNumber: any): Promise<string> {
