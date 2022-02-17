@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { MoreThan, Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { Transaction, Address, DailySummary } from '../../databases';
 
 @Injectable()
@@ -24,7 +24,7 @@ export class DashboardService {
       const activeAccountCount = await this.addressRepository
         .createQueryBuilder('address')
         .where({
-          balance: MoreThan(Number(process.env.MIN_BALANCE)),
+          balance: MoreThanOrEqual(Number(process.env.MIN_BALANCE)),
         })
         .getCount();
 
