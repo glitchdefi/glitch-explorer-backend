@@ -6,6 +6,7 @@ import { Log, Block, Event, Extrinsic, Transaction, BalanceHistory, Address } fr
 import Connection from './connection'
 import fetchBalance from './fetchBalance';
 import axios from 'axios'
+import { MoreThan } from 'typeorm';
 require('dotenv').config()
 const fs = require('fs');
 const MAX_HEADERS = 75;
@@ -375,16 +376,24 @@ class FetchOneBlock {
       let ethAccountArrs = Object.keys(ethAccounts)
       for (let [ai, ethAccAdd] of ethAccountArrs.entries()) {
         let glitchAddress = (await api.query.evmAccounts.accounts(ethAccAdd))?.toString()
-        if (glitchAddress) {
+        // is account linked
+        let isAccountLinked = !!glitchAddress
+        if (isAccountLinked) {
+          // find in DB if evmaddress inserted 
+          let evmAddressEntity = await this.entityManager.findOne(Address, { where: { evmAddress: ethAccAdd } })
+          if (evmAddressEntity) { // update glitch address if account is linked
+            await this.connection.createQueryBuilder().update(Address).set({ address: glitchAddress }).where("id = :id", { id: evmAddressEntity.id }).execute()
+          } 
+          // store in array to process balance history
           if (accounts[glitchAddress]) {
             accounts[glitchAddress].evmAddress = ethAccAdd
           } else {
             accounts[glitchAddress] = ({ address: glitchAddress, evmAddress: ethAccAdd, created: time })
           }
-        } else {
+          
+        } else { // account not linked
           accounts[ethAccAdd] = ({ evmAddress: ethAccAdd, created: time })
         }
-        
       }
 
       let balanceHistoryDatas = []
@@ -405,6 +414,8 @@ class FetchOneBlock {
         balanceHistoryDatas.push({ address: accAdd, balance: balance.toString(), blockIndex: blockNumber.toNumber(), time: time, fetchStatus: 0, headerHash: lastHeader.hash.toString().substring(2) })
       }
       await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
+
+      // process address
       await this.connection.createQueryBuilder().insert().into(Address).values(addressDatas)
         .orUpdate({
         conflict_target: ["glitch_address"],
@@ -462,7 +473,7 @@ class FetchOneBlock {
     try {
       const _startTime = Date.now()
       await this.init()
-      const block = await this.entityManager.findOne(Block, height);
+      const block = await this.entityManager.findOne(Block, { where: { index: height, txNum: MoreThan(-1) } });
       if (block && force === false) {
         if (process.env.LOGALL === 'true') console.log(`${new Date().toISOString()} fetchBlock fromDB success: height ${height}`);
         return true;

@@ -1,5 +1,5 @@
 import { Block } from '../src/databases/Block.entity';
-import { Between, getManager } from 'typeorm';
+import { Between, getManager, MoreThan } from 'typeorm';
 import * as path from 'path';
 import Connection from './connection'
 
@@ -15,6 +15,7 @@ const fetchOldBLock = async () => {
   let ChildProcessPath = path.resolve(__dirname, "cli.fetchSomeBlocks.ts")
   let entityManager = getManager('postgres');;
   const lastBlock = await entityManager.findOne(Block, {
+    where: {txNum: MoreThan(-1)},
     order: {
         index: "DESC",
     },
@@ -36,7 +37,7 @@ const fetchOldBLock = async () => {
   for (var i = start; i < lastBlockHeight; i+=step){
     let from = i
     let to = Math.min(i + step, lastBlockHeight)
-    let [blocks, count] = await entityManager.findAndCount(Block, { index: Between(from, to) });
+    let [blocks, count] = await entityManager.findAndCount(Block, { index: Between(from, to), txNum: MoreThan(-1) });
     let processTitle = `Process No.${spawnProcess + 1}/${cpuCount}`
     if (count > step) {
       console.log(`${new Date().toISOString()} fetched ${count} from ${i} to  ${to}\n-----------------------------------------------------\n`)
