@@ -94,7 +94,7 @@ class BlockTransactionController {
     const pageSize = Number(query.size) || 15;
     const pageIndex = Number(query.page) || 1;
 
-    if (height <= 0 || pageSize <= 0 || pageIndex <= 0)
+    if (height < 0 || pageSize <= 0 || pageIndex <= 0)
       throw new BadRequestException();
 
     let result: any;
@@ -118,7 +118,7 @@ class BlockTransactionController {
     const pageSize = Number(query.size) || 15;
     const pageIndex = Number(query.page) || 1;
 
-    if (Number.isNaN(height) || height <= 0 || pageSize <= 0 || pageIndex <= 0)
+    if (Number.isNaN(height) || height < 0 || pageSize <= 0 || pageIndex <= 0)
       throw new BadRequestException();
 
     if (height <= 0) throw new BadRequestException();
