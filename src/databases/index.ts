@@ -6,3 +6,4 @@ export * from './Event.entity';
 export * from './Extrinsic.entity';
 export * from './BalanceHistory.entity';
 export * from './DailySummary.entity';
+export * from './Staking.entity';

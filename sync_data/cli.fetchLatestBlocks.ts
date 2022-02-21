@@ -1,7 +1,4 @@
-import { Block } from '../src/databases/Block.entity';
-import { Between, getManager } from 'typeorm';
 import * as path from 'path';
-import Connection from './connection'
 
 import { fork } from 'child_process';
 const fetchLastBlock = () => {
@@ -17,7 +14,6 @@ const wait = (time = 1000): Promise<void> => {
 }
 
 const run = async (): Promise<void> => {
-  await Connection.init(false, true, false)
   fetchLastBlock()
 }
 

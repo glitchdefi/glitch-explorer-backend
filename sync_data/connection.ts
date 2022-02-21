@@ -1,7 +1,7 @@
 import { ApiPromise, HttpProvider, WsProvider } from '@polkadot/api';
 import { HeaderExtended } from '@polkadot/api-derive/types';
 import { createConnections, getConnection, getManager } from 'typeorm';
-import { Address, BalanceHistory, Block, DailySummary, Event, Extrinsic, Log, Transaction } from '../src/databases';
+import { Address, BalanceHistory, Block, DailySummary, Event, Extrinsic, Log, Transaction, Staking } from '../src/databases';
 require('dotenv').config()
 const connect = async (): Promise<void> => {
   await createConnections([{
@@ -24,7 +24,8 @@ const connect = async (): Promise<void> => {
       Event,
       Extrinsic,
       BalanceHistory,
-      DailySummary
+      DailySummary,
+      Staking
     ],
     synchronize: true,
   }]);

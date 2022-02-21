@@ -2,6 +2,7 @@ import { HeaderExtended } from '@polkadot/api-derive/types';
 import { keyring } from '@polkadot/ui-keyring';
 import Connection from './connection';
 import fetchOneBlock from './fetchOneBlock';
+import fetchStaking from './fetchStaking';
 require('dotenv').config()
 export interface HeaderExtendedWithMapping extends HeaderExtended {
   authorFromMapping?: string;
@@ -37,6 +38,7 @@ class FetchLastBlock {
   }
 
   async fetchBlock(height: number): Promise<boolean> {
+    await fetchStaking.fetchStaking(height)
     return fetchOneBlock.fetchBlock(height)
   }
 }
