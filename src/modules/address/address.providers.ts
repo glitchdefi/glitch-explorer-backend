@@ -8,11 +8,6 @@ export const AddressProviders = [
     inject: ['DATABASE_CONNECTION'],
   },
   {
-    provide: 'STAKING_REPOSITORY',
-    useFactory: (connection: Connection) => connection.getRepository(Staking),
-    inject: ['DATABASE_CONNECTION'],
-  },
-  {
     provide: 'TRANSACTION_REPOSITORY',
     useFactory: (connection: Connection) =>
       connection.getRepository(Transaction),

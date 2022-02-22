@@ -9,8 +9,6 @@ export class AddressService {
   constructor(
     @Inject('ADDRESS_REPOSITORY')
     private addressRepository: Repository<Address>,
-    @Inject('STAKING_REPOSITORY')
-    private stakingRepository: Repository<Staking>,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
     @Inject('BALANCE_HISTORY_REPOSITORY')
@@ -58,9 +56,20 @@ export class AddressService {
 
   async getAddress(address: string): Promise<any> {
     try {
-      const account = await this.addressRepository.findOne({
-        where: [{ address: address }, { evmAddress: address }],
-      });
+      const account = await this.addressRepository
+        .createQueryBuilder('address')
+        .leftJoinAndSelect(
+          Staking,
+          'staking',
+          'address.address = staking.address',
+        )
+        .where(
+          'address.glitch_address = :address OR address.evm_address = :address',
+          {
+            address,
+          },
+        )
+        .getRawOne();
 
       if (!account) return null;
 
@@ -102,7 +111,13 @@ export class AddressService {
       const lastTxDate = txInfo.last_tx_date;
 
       return {
-        ...account,
+        id: account['address_id'],
+        glitch_address: account['address_glitch_address'],
+        evm_address: account['address_evm_address'],
+        balance: account['address_balance'],
+        last_block_time: account['address_last_block_time'],
+        address_created: account['address_address_created'],
+        type: account['staking_type'],
         totalReceived,
         totalSpend,
         totalTx,
