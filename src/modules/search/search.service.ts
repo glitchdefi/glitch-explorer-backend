@@ -27,6 +27,7 @@ export class SearchService {
           },
         ],
       });
+
       if (wallets.length) {
         return {
           wallet: wallets.map((wallet) => {
@@ -54,21 +55,27 @@ export class SearchService {
         };
       }
 
-      const height = Number(term);
-      if (!isNaN(height)) {
-        console.log(height);
-        const blocks = await this.blockRepository.find({
+      const height = Number.parseInt(term);
+      let blocks = [];
+
+      if (term.startsWith('0x') || isNaN(height)) {
+        blocks = await this.blockRepository.find({
+          hash: term,
+        });
+      } else {
+        blocks = await this.blockRepository.find({
           index: height,
         });
-        if (blocks.length) {
-          return {
-            block: blocks.map((block) => {
-              return {
-                ...block,
-              };
-            }),
-          };
-        }
+      }
+
+      if (blocks.length) {
+        return {
+          block: blocks.map((block) => {
+            return {
+              ...block,
+            };
+          }),
+        };
       }
 
       return null;
