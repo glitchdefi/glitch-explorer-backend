@@ -10,13 +10,10 @@ export class BlockService {
 
   constructor(
     @Inject('BLOCK_REPOSITORY')
-    private blockRepository: Repository<Block>
+    private blockRepository: Repository<Block>,
   ) {}
 
-  async getBlockList(
-    pageSize: number,
-    pageIndex: number
-  ): Promise<any> {
+  async getBlockList(pageSize: number, pageIndex: number): Promise<any> {
     try {
       const blockCount = await this.getBlockCount();
       const blocks = await this.blockRepository
@@ -52,9 +49,13 @@ export class BlockService {
 
   async getBlock(height: number): Promise<any> {
     try {
-      const block = await this.blockRepository.findOne({
-        index: height,
-      });
+      const block = await this.blockRepository
+        .createQueryBuilder('block')
+        .leftJoinAndSelect('block.logs', 'logs')
+        .where({
+          index: height,
+        })
+        .getOne();
 
       if (!block) return null;
 
