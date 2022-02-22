@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { Address, BalanceHistory, Transaction } from '../../databases';
+import { Address, BalanceHistory, Staking, Transaction } from '../../databases';
 
 @Injectable()
 export class AddressService {
@@ -9,6 +9,8 @@ export class AddressService {
   constructor(
     @Inject('ADDRESS_REPOSITORY')
     private addressRepository: Repository<Address>,
+    @Inject('STAKING_REPOSITORY')
+    private stakingRepository: Repository<Staking>,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
     @Inject('BALANCE_HISTORY_REPOSITORY')
@@ -19,15 +21,15 @@ export class AddressService {
     try {
       const addressCount = await this.getAddressCount();
       const addresses = await this.addressRepository.query(
-        `select a.*, count(t.id) as tx_count
-        from address a
-        left join transaction t
-          on t.from = a.glitch_address or t.to = a.glitch_address
-            or t.from = a.evm_address or t.to = a.evm_address
-        group by a.id
-        order by a.id desc
-        limit ${pageSize}
-        offset ${(pageIndex - 1) * pageSize}`,
+        `SELECT a.*, count(t.id) AS tx_count
+        FROM address a
+        LEFT JOIN transaction t
+          ON t.from = a.glitch_address OR t.to = a.glitch_address
+            OR t.from = a.evm_address OR t.to = a.evm_address
+        GROUP BY a.id
+        ORDER BY a.id desc
+        LIMIT ${pageSize}
+        OFFSET ${(pageIndex - 1) * pageSize}`,
       );
 
       return {
@@ -200,4 +202,101 @@ export class AddressService {
       throw error;
     }
   }
+
+  async getValidatorList(pageSize: number, pageIndex: number): Promise<any> {
+    try {
+      const validatorCount = Number(
+        (
+          await this.addressRepository.query(`WITH added_row_number AS (
+            SELECT *,
+              ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
+            FROM staking
+            WHERE type = ${StakingType.VALIDATOR}
+          )
+          SELECT COUNT(*)
+          FROM added_row_number a
+          WHERE a.row_number = 1`)
+        )[0].count,
+      );
+      const validators = await this.addressRepository.query(
+        `WITH added_row_number AS (
+          SELECT *,
+            ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
+          FROM staking
+          WHERE type = ${StakingType.VALIDATOR}
+        )
+        SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count
+        FROM added_row_number a
+        LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
+        WHERE a.row_number = 1
+        GROUP BY a.id, a.address, a.type, a.era
+        LIMIT ${pageSize}
+        OFFSET ${(pageIndex - 1) * pageSize}`,
+      );
+
+      return {
+        data: validators.map((validator: any) => {
+          return {
+            ...validator,
+          };
+        }),
+        total: validatorCount,
+        pagination: Math.ceil(validatorCount / pageSize),
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async getNominatorList(pageSize: number, pageIndex: number): Promise<any> {
+    try {
+      const nominatorCount = Number(
+        (
+          await this.addressRepository.query(`WITH added_row_number AS (
+            SELECT *,
+              ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
+            FROM staking
+            WHERE type = ${StakingType.NOMINATOR}
+          )
+          SELECT COUNT(*)
+          FROM added_row_number a
+          WHERE a.row_number = 1`)
+        )[0].count,
+      );
+      const nominators = await this.addressRepository.query(
+        `WITH added_row_number AS (
+          SELECT *,
+            ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
+          FROM staking
+          WHERE type = ${StakingType.NOMINATOR}
+        )
+        SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count
+        FROM added_row_number a
+        LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
+        WHERE a.row_number = 1
+        GROUP BY a.id, a.address, a.type, a.era
+        LIMIT ${pageSize}
+        OFFSET ${(pageIndex - 1) * pageSize}`,
+      );
+
+      return {
+        data: nominators.map((nominator: any) => {
+          return {
+            ...nominator,
+          };
+        }),
+        total: nominatorCount,
+        pagination: Math.ceil(nominatorCount / pageSize),
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+}
+
+enum StakingType {
+  VALIDATOR = 0,
+  NOMINATOR = 1,
 }

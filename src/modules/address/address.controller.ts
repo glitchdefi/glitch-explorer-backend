@@ -113,3 +113,49 @@ export class AddressController {
     return result;
   }
 }
+
+@Controller('validator')
+export class ValidatorController {
+  constructor(private addressService: AddressService) {}
+
+  @Get('list')
+  async getAddressList(@Query() query: any): Promise<any> {
+    const pageSize = Number(query.page_size) || 15;
+    const pageIndex = Number(query.page_index) || 1;
+
+    if (pageSize <= 0 || pageIndex <= 0) throw new BadRequestException();
+
+    let result: any;
+
+    try {
+      result = await this.addressService.getValidatorList(pageSize, pageIndex);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    return result;
+  }
+}
+
+@Controller('nominator')
+export class NominatorController {
+  constructor(private addressService: AddressService) {}
+
+  @Get('list')
+  async getNominatorList(@Query() query: any): Promise<any> {
+    const pageSize = Number(query.page_size) || 15;
+    const pageIndex = Number(query.page_index) || 1;
+
+    if (pageSize <= 0 || pageIndex <= 0) throw new BadRequestException();
+
+    let result: any;
+
+    try {
+      result = await this.addressService.getNominatorList(pageSize, pageIndex);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    return result;
+  }
+}
