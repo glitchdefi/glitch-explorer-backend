@@ -18,12 +18,17 @@ export class AddressService {
   async getAddressList(pageSize: number, pageIndex: number): Promise<any> {
     try {
       const addressCount = await this.getAddressCount();
-      const addresses = await this.addressRepository
-        .createQueryBuilder('address')
-        .orderBy('id', 'DESC')
-        .skip((pageIndex - 1) * pageSize)
-        .take(pageSize)
-        .getMany();
+      const addresses = await this.addressRepository.query(
+        `select a.*, count(t.id) as tx_count
+        from address a
+        left join transaction t
+          on t.from = a.glitch_address or t.to = a.glitch_address
+            or t.from = a.evm_address or t.to = a.evm_address
+        group by a.id
+        order by a.id desc
+        limit ${pageSize}
+        offset ${(pageIndex - 1) * pageSize}`,
+      );
 
       return {
         data: addresses.map((address: any) => {
