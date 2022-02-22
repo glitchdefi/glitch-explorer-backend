@@ -91,8 +91,8 @@ class BlockTransactionController {
     @Query() query: any,
   ): Promise<any> {
     const height = Number(params.height);
-    const pageSize = Number(query.size) || 15;
-    const pageIndex = Number(query.page) || 1;
+    const pageSize = Number(query.page_size) || 15;
+    const pageIndex = Number(query.page_index) || 1;
 
     if (height < 0 || pageSize <= 0 || pageIndex <= 0)
       throw new BadRequestException();
