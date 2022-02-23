@@ -1,5 +1,5 @@
 import { encodeAddress } from '@polkadot/util-crypto';
-import { Staking } from '../src/databases';
+import { NominatorValidator, Staking } from '../src/databases';
 import Connection from './connection';
 require('dotenv').config()
 
@@ -8,16 +8,21 @@ class FetchStaking {
   web3: any;
   entityManager: any;
   connection: any;
+  epochDuration: any;
+  sessionsPerEra: any;
   fetchedEras = {}
   async fetchStaking(blockNumber): Promise<void> {
     try {
       let api = Connection.api
-
+      if (!this.epochDuration) {
+        this.epochDuration = (api.consts.babe.epochDuration).toNumber()
+        this.sessionsPerEra = api.consts.staking.sessionsPerEra.toNumber()
+      }
       let epoch = Math.floor(
-        blockNumber/(api.consts.babe.epochDuration).toNumber(),
+        blockNumber/ this.epochDuration,
       );
       let era = Math.floor(
-        epoch / api.consts.staking.sessionsPerEra.toNumber(),
+        epoch / this.sessionsPerEra,
       );
       
       if (this.fetchedEras[era]) {
@@ -39,13 +44,16 @@ class FetchStaking {
       let resultNominators = []
       nominators.forEach(each => {
         let ss58address = encodeAddress('0x' + each[0].toString().substring(82)).toString()
-        resultNominators.push(ss58address)
+        let temp = JSON.parse(JSON.stringify(each[1]))
+        resultNominators.push({
+          address: ss58address,
+          validators: temp.targets,
+          submittedEra: temp.submittedIn
+        })
       })
-      let result = {
-        validators: validators.validators,
-        nominators: resultNominators
-      }
       let insertData = []
+      //relationship
+      let relationshipData = []
       validators.validators.forEach(validator => {
         insertData.push({
           address: validator.toString(),
@@ -54,13 +62,24 @@ class FetchStaking {
         })
       })
       resultNominators.forEach(nominator => {
+        console.log(nominator)
         insertData.push({
-          address: nominator.toString(),
+          address: nominator.address.toString(),
           type: 1,
           era: era
         })
+        nominator.validators.forEach(validator => {
+          relationshipData.push({
+            nominator: nominator.address.toString(),
+            validator: validator.toString(),
+            era: era,
+            submittedEra: nominator.submittedEra
+          })
+        })
       })
       await Connection.connection.createQueryBuilder().insert().into(Staking).values(insertData).execute()
+      await Connection.connection.createQueryBuilder().insert().into(NominatorValidator).values(relationshipData).execute()
+      
     } catch (error) {
       console.log(error) 
     }

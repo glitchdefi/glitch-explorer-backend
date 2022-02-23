@@ -7,3 +7,4 @@ export * from './Extrinsic.entity';
 export * from './BalanceHistory.entity';
 export * from './DailySummary.entity';
 export * from './Staking.entity';
+export * from './NominatorValidator.entity';
