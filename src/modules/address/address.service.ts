@@ -33,7 +33,7 @@ export class AddressService {
           ON t.from = a.glitch_address OR t.to = a.glitch_address
             OR t.from = a.evm_address OR t.to = a.evm_address
         GROUP BY a.id
-        ORDER BY a.id desc
+        ORDER BY a.balance desc
         LIMIT ${pageSize}
         OFFSET ${(pageIndex - 1) * pageSize}`,
       );
