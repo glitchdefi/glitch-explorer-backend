@@ -89,7 +89,7 @@ export class AddressController {
         hash,
         pageSize,
         pageIndex,
-        false,
+        true,
       );
     } catch (error) {
       throw new InternalServerErrorException();
