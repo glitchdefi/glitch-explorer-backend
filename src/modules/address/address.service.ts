@@ -1,6 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { Address, BalanceHistory, Staking, Transaction } from '../../databases';
+import {
+  Address,
+  BalanceHistory,
+  NominatorValidator,
+  Staking,
+  Transaction,
+} from '../../databases';
 
 @Injectable()
 export class AddressService {
@@ -9,6 +15,8 @@ export class AddressService {
   constructor(
     @Inject('ADDRESS_REPOSITORY')
     private addressRepository: Repository<Address>,
+    @Inject('NOMINATOR_VALIDATOR_REPOSITORY')
+    private nominatorValidatorRepository: Repository<NominatorValidator>,
     @Inject('TRANSACTION_REPOSITORY')
     private transactionRepository: Repository<Transaction>,
     @Inject('BALANCE_HISTORY_REPOSITORY')
@@ -25,7 +33,7 @@ export class AddressService {
           ON t.from = a.glitch_address OR t.to = a.glitch_address
             OR t.from = a.evm_address OR t.to = a.evm_address
         GROUP BY a.id
-        ORDER BY a.id desc
+        ORDER BY a.balance desc
         LIMIT ${pageSize}
         OFFSET ${(pageIndex - 1) * pageSize}`,
       );
@@ -304,6 +312,52 @@ export class AddressService {
         total: nominatorCount,
         pagination: Math.ceil(nominatorCount / pageSize),
       };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async getValidators(
+    nominator: string,
+    pageSize: number,
+    pageIndex: number,
+  ): Promise<any> {
+    try {
+      const validators = await this.nominatorValidatorRepository
+        .createQueryBuilder('nominatorValidator')
+        .where('nominatorValidator.nominator = :nominator', { nominator })
+        .orderBy({
+          era: 'ASC',
+        })
+        .skip((pageIndex - 1) * pageSize)
+        .take(pageSize)
+        .getMany();
+
+      return { nominator, validators };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async getNominators(
+    validator: string,
+    pageSize: number,
+    pageIndex: number,
+  ): Promise<any> {
+    try {
+      const nominators = await this.nominatorValidatorRepository
+        .createQueryBuilder('nominatorValidator')
+        .where('nominatorValidator.validator = :validator', { validator })
+        .orderBy({
+          era: 'ASC',
+        })
+        .skip((pageIndex - 1) * pageSize)
+        .take(pageSize)
+        .getMany();
+
+      return { validator, nominators };
     } catch (error) {
       this.logger.error(error);
       throw error;
