@@ -9,44 +9,37 @@ const wait = (time = 1000): Promise<void> => {
   });
 }
 const THRESHOLD = 100
+const fetch = async (addressObj) => {
+  let entityManager = getManager('postgres');
+  let api = Connection.httpApi
+  try {
+    let evmAddress = (await api.query.evmAccounts.evmAddresses(addressObj.address))?.toString()
+    if (evmAddress) {
+      console.log(`${addressObj.address} linked ${evmAddress}`)
+      let evmAddressEntity = await entityManager.findOne(Address, { where: { evmAddress } })
+      if (evmAddressEntity) {
+          await Connection.connection.createQueryBuilder().delete().from(Address).where("id = :id", { id: Math.max(evmAddressEntity.id, addressObj.id) }).execute()
+          await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress}).where("id = :id", { id:  Math.min(evmAddressEntity.id, addressObj.id) }).execute()
+      } else {
+        await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress}).where("id = :id", { id: addressObj.id }).execute()
+      }
+      
+    } else {
+      return true
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 const fetchEvmAddress = async () => {
   // get transaction not fetched fee
   let entityManager = getManager('postgres');
-  const rows = await entityManager.find(Address, {
-    where: {
-      evmAddress: IsNull()
-    },
-    order: {
-      id: "DESC",
-    },
-    take: THRESHOLD
-  });
+  const rows = await entityManager.find(Address, { where: { evmAddress: IsNull() }, order: { id: "DESC", }, take: THRESHOLD });
   console.log("Find:", rows.length, "addresses")
-  let waitTime = 1000
-  if (rows.length === 0) {
-    console.log('--- no evmAddress to fetch, wait 3s')
-    await wait(3000)
-    await fetchEvmAddress()
-    return;
-  } else if(rows.length < THRESHOLD) {
-    waitTime = 3000 //60s
-  }
-  let api = Connection.httpApi
-  const fetch = async (addressObj) => {
-    try {
-      let evmAddress = (await api.query.evmAccounts.evmAddresses(addressObj.address))?.toString()
-      if (evmAddress) {
-        await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress}).where("id = :id", { id: addressObj.id }).execute()
-      } else {
-        return true
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
   let funcs = rows.map(each => fetch(each))
   await Promise.all(funcs)
-  await wait(waitTime)
+  await wait(3000)
   await fetchEvmAddress()
 }
 const run = async (): Promise<void> => {
