@@ -27,6 +27,6 @@ export class Address {
   created: Date;
 
   @Index()
-  @Column({ name: 'last_fetch_evm', type: 'timestamptz', nullable: true })
+  @Column({ name: 'last_fetch_evm', type: 'timestamptz', default: new Date('1970-01-01') })
   lastFetchEvm: Date;
 }
