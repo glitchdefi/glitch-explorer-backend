@@ -17,12 +17,12 @@ module.exports = {
     script: "npx ts-node sync_data/cli.fetchTransactionFee.ts",
     cron_restart: "0 0 * * *"
   }, {
-    name: "fetchDailyCron",
+    name: "fetchDailySummary",
     script: "npx ts-node sync_data/cli.fetchDailySummary.ts",
     cron_restart: "0 0 * * *"
     },
     {
-      name: "fetchDailyCron",
+      name: "fetchEvmAccount",
       script: "npx ts-node sync_data/cli.fetchEvmAccount.ts",
       cron_restart: "0 0 * * *"
       }
