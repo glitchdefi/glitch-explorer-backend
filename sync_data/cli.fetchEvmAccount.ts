@@ -12,6 +12,7 @@ const THRESHOLD = 100
 const fetch = async (addressObj) => {
   let entityManager = getManager('postgres');
   let api = Connection.httpApi
+  let now = new Date()
   try {
     let evmAddress = (await api.query.evmAccounts.evmAddresses(addressObj.address))?.toString()
     if (evmAddress) {
@@ -19,12 +20,13 @@ const fetch = async (addressObj) => {
       let evmAddressEntity = await entityManager.findOne(Address, { where: { evmAddress } })
       if (evmAddressEntity) {
           await Connection.connection.createQueryBuilder().delete().from(Address).where("id = :id", { id: Math.max(evmAddressEntity.id, addressObj.id) }).execute()
-          await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress}).where("id = :id", { id:  Math.min(evmAddressEntity.id, addressObj.id) }).execute()
+          await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress, lastFetchEvm: now}).where("id = :id", { id:  Math.min(evmAddressEntity.id, addressObj.id) }).execute()
       } else {
-        await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress}).where("id = :id", { id: addressObj.id }).execute()
+        await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress, lastFetchEvm: now}).where("id = :id", { id: addressObj.id }).execute()
       }
       
     } else {
+      await Connection.connection.createQueryBuilder().update(Address).set({ lastFetchEvm: now}).where("id = :id", { id: addressObj.id }).execute()
       return true
     }
   } catch (error) {
@@ -35,7 +37,7 @@ const fetch = async (addressObj) => {
 const fetchEvmAddress = async () => {
   // get transaction not fetched fee
   let entityManager = getManager('postgres');
-  const rows = await entityManager.find(Address, { where: { evmAddress: IsNull() }, order: { id: "DESC", }, take: THRESHOLD });
+  const rows = await entityManager.find(Address, { where: { evmAddress: IsNull() }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
   console.log("Find:", rows.length, "addresses")
   let funcs = rows.map(each => fetch(each))
   await Promise.all(funcs)
