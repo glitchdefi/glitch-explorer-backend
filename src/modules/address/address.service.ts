@@ -249,11 +249,12 @@ export class AddressService {
           FROM staking
           WHERE type = ${StakingType.VALIDATOR}
         )
-        SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count
+        SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count, ad.evm_address, ad.balance
         FROM added_row_number a
-        LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
+          LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
+          LEFT JOIN address ad ON ad.glitch_address = a.address
         WHERE a.row_number = 1
-        GROUP BY a.id, a.address, a.type, a.era
+        GROUP BY a.id, a.address, a.type, a.era, ad.evm_address, ad.balance
         LIMIT ${pageSize}
         OFFSET ${(pageIndex - 1) * pageSize}`,
       );
@@ -295,11 +296,12 @@ export class AddressService {
           FROM staking
           WHERE type = ${StakingType.NOMINATOR}
         )
-        SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count
+        SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count, ad.evm_address, ad.balance
         FROM added_row_number a
-        LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
+          LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
+          LEFT JOIN address ad ON ad.glitch_address = a.address
         WHERE a.row_number = 1
-        GROUP BY a.id, a.address, a.type, a.era
+        GROUP BY a.id, a.address, a.type, a.era, ad.evm_address, ad.balance
         LIMIT ${pageSize}
         OFFSET ${(pageIndex - 1) * pageSize}`,
       );
