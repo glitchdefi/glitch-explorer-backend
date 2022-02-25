@@ -1,4 +1,4 @@
-import { getManager, IsNull } from 'typeorm';
+import { getManager, IsNull, LessThan } from 'typeorm';
 import { Address } from '../src/databases';
 import Connection from './connection';
 const wait = (time = 1000): Promise<void> => {
@@ -65,12 +65,14 @@ const fetchEvm = async (addressObj) => {
 const fetchEvmAddress = async () => {
   // get transaction not fetched fee
   let entityManager = getManager('postgres');
-  const rows = await entityManager.find(Address, { where: { evmAddress: IsNull() }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
+  let oneHourAgo = new Date()
+  oneHourAgo.setHours(oneHourAgo.getHours() - 1)
+  const rows = await entityManager.find(Address, { where: { evmAddress: IsNull(), lastFetchEvm: LessThan(oneHourAgo) }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
   console.log("Find:", rows.length, "addresses")
   let funcs = rows.map(each => fetch(each))
   await Promise.all(funcs)
 
-  const evmRows = await entityManager.find(Address, { where: { address: IsNull() }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
+  const evmRows = await entityManager.find(Address, { where: { address: IsNull(), lastFetchEvm: LessThan(oneHourAgo) }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
   console.log("Find:", evmRows.length, " evm addresses")
   funcs = evmRows.map(each => fetchEvm(each))
   await Promise.all(funcs)
