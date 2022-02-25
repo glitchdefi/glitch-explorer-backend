@@ -66,7 +66,7 @@ const fetchEvmAddress = async () => {
   // get transaction not fetched fee
   let entityManager = getManager('postgres');
   let oneHourAgo = new Date()
-  oneHourAgo.setHours(oneHourAgo.getHours() - 1)
+  // oneHourAgo.setHours(oneHourAgo.getHours() - 1)
   const rows = await entityManager.find(Address, { where: { evmAddress: IsNull(), lastFetchEvm: LessThan(oneHourAgo) }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
   console.log("Find:", rows.length, "addresses")
   let funcs = rows.map(each => fetch(each))
