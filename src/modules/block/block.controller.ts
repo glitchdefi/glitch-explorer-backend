@@ -76,4 +76,28 @@ export class BlockController {
 
     return result;
   }
+
+  @Get('authored_blocks')
+  async getAuthoredBlockList(@Query() query: any): Promise<any> {
+    const validator = query.validator;
+    const pageSize = Number(query.page_size) || 15;
+    const pageIndex = Number(query.page_index) || 1;
+
+    if (!validator || pageSize <= 0 || pageIndex <= 0)
+      throw new BadRequestException();
+
+    let result: any;
+
+    try {
+      result = await this.blockService.getAuthoredBlockList(
+        validator,
+        pageSize,
+        pageIndex,
+      );
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    return result;
+  }
 }

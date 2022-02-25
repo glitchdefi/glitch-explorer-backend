@@ -87,7 +87,7 @@ export class AddressService {
         .where('transaction.to = :address', { address })
         .getRawOne();
 
-      const totalReceived = txInfo.total_received || '0';
+      const total_received = txInfo.total_received || '0';
 
       txInfo = await this.transactionRepository
         .createQueryBuilder('transaction')
@@ -95,7 +95,7 @@ export class AddressService {
         .where('transaction.from = :address', { address })
         .getRawOne();
 
-      const totalSpend = txInfo.total_spend || '0';
+      const total_spend = txInfo.total_spend || '0';
 
       txInfo = await this.transactionRepository
         .createQueryBuilder('transaction')
@@ -105,7 +105,7 @@ export class AddressService {
         })
         .getRawOne();
 
-      const totalTx = txInfo.total_tx || '0';
+      const total_tx = txInfo.total_tx || '0';
 
       txInfo = await this.transactionRepository
         .createQueryBuilder('transaction')
@@ -116,7 +116,7 @@ export class AddressService {
         .orderBy('block_index', 'DESC')
         .getRawOne();
 
-      const lastTxDate = txInfo.last_tx_date;
+      const last_tx_date = txInfo.last_tx_date;
 
       return {
         id: account['address_id'],
@@ -124,12 +124,13 @@ export class AddressService {
         evm_address: account['address_evm_address'],
         balance: account['address_balance'],
         last_block_time: account['address_last_block_time'],
-        address_created: account['address_address_created'],
+        created: account['address_created'],
+        last_fetch_evm: account['address_last_fetch_evm'],
         type: account['staking_type'],
-        totalReceived,
-        totalSpend,
-        totalTx,
-        lastTxDate,
+        total_received,
+        total_spend,
+        total_tx,
+        last_tx_date,
       };
     } catch (error) {
       this.logger.error(error);

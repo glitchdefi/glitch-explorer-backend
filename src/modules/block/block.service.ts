@@ -84,4 +84,37 @@ export class BlockService {
       throw error;
     }
   }
+
+  async getAuthoredBlockList(
+    validator: string,
+    pageSize: number,
+    pageIndex: number,
+  ): Promise<any> {
+    try {
+      const blockCount = await this.blockRepository
+        .createQueryBuilder('block')
+        .where('block.validator = :validator', { validator })
+        .getCount();
+      const blocks = await this.blockRepository
+        .createQueryBuilder('block')
+        .where('block.validator = :validator', { validator })
+        .orderBy('block.index', 'DESC')
+        .skip((pageIndex - 1) * pageSize)
+        .take(pageSize)
+        .getMany();
+
+      return {
+        data: blocks.map((block: any) => {
+          return {
+            ...block,
+          };
+        }),
+        total: blockCount,
+        pagination: Math.ceil(blockCount / pageSize),
+      };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
 }
