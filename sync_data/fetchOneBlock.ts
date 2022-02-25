@@ -255,8 +255,8 @@ class FetchOneBlock {
             exHash: '',
           };
           transactionDatas.push(transactionData)
-          if(transactionData.from !== "null") ethAccounts[transactionData.from] = transactionData.from
-          if(transactionData.to !== "null") ethAccounts[transactionData.to] = transactionData.to
+          if (transactionData.from !== "null") ethAccounts[transactionData.from] = transactionData.from
+          if (transactionData.to !== "null") ethAccounts[transactionData.to] = transactionData.to
         })
       }
 
@@ -292,9 +292,9 @@ class FetchOneBlock {
             };
             transactionDatas.push(transactionData)
             if (!accounts[transactionData.from])
-              accounts[transactionData.from] = { address: transactionData.from, created: time }
+              accounts[transactionData.from] = transactionData.from
             if (!accounts[transactionData.to])
-              accounts[transactionData.to] = { address: transactionData.to, created: time }
+              accounts[transactionData.to] = transactionData.to
           }
         }
       }
@@ -372,42 +372,42 @@ class FetchOneBlock {
       // console.log('--extract', Date.now() - startExtract)
       // startTime = Date.now()
 
+
+      let addressDatas = []
+      let evmAddressDatas = []
+      let processedAddresses = {}
+
       //extract eth address 
       let ethAccountArrs = Object.keys(ethAccounts)
       for (let [ai, ethAccAdd] of ethAccountArrs.entries()) {
-        let glitchAddress = (await api.query.evmAccounts.accounts(ethAccAdd))?.toString()
-        console.log('--glitchAddress', glitchAddress, ethAccAdd)
+        let evmAddressEntity = await this.entityManager.findOne(Address, { where: { evmAddress: ethAccAdd } })
         // is account linked
-        let isAccountLinked = !!glitchAddress
-        if (isAccountLinked) {
-          // find in DB if evmaddress inserted 
-          let evmAddressEntity = await this.entityManager.findOne(Address, { where: { evmAddress: ethAccAdd } })
-          let glitchAddressEntity =  await this.entityManager.findOne(Address, { where: { address: glitchAddress } })
-          if (evmAddressEntity && glitchAddressEntity) { // update glitch address if account is linked
-              await this.connection.createQueryBuilder().delete().from(Address).where("id = :id", { id: Math.max(evmAddressEntity.id, glitchAddressEntity.id) }).execute()
-          } 
-          // store in array to process balance history
-          if (accounts[glitchAddress]) {
-            accounts[glitchAddress].evmAddress = ethAccAdd
+        if (!evmAddressEntity) {
+          let glitchAddress = (await api.query.evmAccounts.accounts(ethAccAdd))?.toString()
+          console.log('--glitchAddress', glitchAddress, ethAccAdd)
+          let isAccountLinked = !!glitchAddress
+          if (isAccountLinked) {
+            processedAddresses[`${glitchAddress}_${ethAccAdd}`] = { address: glitchAddress, evmAddress: ethAccAdd, created: time }
           } else {
-            accounts[glitchAddress] = ({ address: glitchAddress, evmAddress: ethAccAdd, created: time })
+            processedAddresses[`_${ethAccAdd}`] = { evmAddress: ethAccAdd, created: time }
           }
-          
-        } else { // account not linked
-          accounts[ethAccAdd] = ({ evmAddress: ethAccAdd, created: time })
         }
       }
 
       let balanceHistoryDatas = []
-      let addressDatas = []
-      let evmAddressDatas = []
       let accountAddresses = Object.keys(accounts)
       for (let [ai, accAdd] of accountAddresses.entries()) {
-        if (accAdd.startsWith('0x')) {
-          evmAddressDatas.push(accounts[accAdd])
-        } else {
-          addressDatas.push(accounts[accAdd])
+        let addressEntity = await this.entityManager.findOne(Address, { where: { address: accAdd } })
+        if (!addressEntity) {
+          let evmAddress = (await api.query.evmAccounts.evmAddresses(accAdd))?.toString()
+          if (!!evmAddress) {
+            processedAddresses[`${accAdd}_${evmAddress}`] = { address: accAdd, evmAddress: evmAddress, created: time }
+          } else {
+            processedAddresses[`${accAdd}_`] = { address: accAdd, created: time }
+          }
+          
         }
+
         let stored = await this.entityManager.findOne(BalanceHistory, { where: { address: accAdd, blockIndex: blockNumber.toNumber() } })
         if (stored) {
           continue
@@ -418,24 +418,23 @@ class FetchOneBlock {
       await this.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryDatas).execute()
 
       // process address
-      await this.connection.createQueryBuilder().insert().into(Address).values(addressDatas)
+      try {
+        await this.connection.createQueryBuilder().insert().into(Address).values(Object.values(processedAddresses))
         .orUpdate({
         conflict_target: ["glitch_address"],
         overwrite: ["evm_address"],
         }).execute()
-      
-        await this.connection.createQueryBuilder().insert().into(Address).values(evmAddressDatas)
-        .orUpdate({
-        conflict_target: ["evm_address"],
-        overwrite: ["glitch_address"],
-      }).execute()
+      } catch (error) {
+        console.log(`Error on insert address`, blockNumber, processedAddresses)
+      }
+    
 
       // console.log('--balance', Date.now() - startExtract)
       // startTime = Date.now()
 
       if (isFetchEvent) await this.connection.createQueryBuilder().insert().into(Event).values(eventDatas).execute()
 
-      await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas) .onConflict(`("hash") DO NOTHING`).execute()
+      await this.connection.createQueryBuilder().insert().into(Transaction).values(transactionDatas).onConflict(`("hash") DO NOTHING`).execute()
       await this.connection.createQueryBuilder().update(Block).set({ txNum: transactionDatas.length }).where("index = :index", { index: blockNumber.toNumber() }).execute()
 
       // insert log
@@ -455,7 +454,7 @@ class FetchOneBlock {
 
       // console.log('--saveDB', Date.now() - startTime)
       // startTime = Date.now()
-      console.log(`${new Date().toISOString()} fetchBlock success: height ${height} txNum ${transactionDatas.length} events ${eventDatas.length} balanceHistoryDatas ${balanceHistoryDatas.length} addressDatas ${addressDatas.length} logs ${logs.length}`);
+      console.log(`${new Date().toISOString()} fetchBlock success: height ${height} txNum ${transactionDatas.length} events ${eventDatas.length} balanceHistoryDatas ${balanceHistoryDatas.length} logs ${logs.length}`);
     }
   }
 
