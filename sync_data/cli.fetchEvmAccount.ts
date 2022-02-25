@@ -19,8 +19,9 @@ const fetch = async (addressObj) => {
       console.log(`${addressObj.address} linked ${evmAddress}`)
       let evmAddressEntity = await entityManager.findOne(Address, { where: { evmAddress } })
       if (evmAddressEntity) {
+          let newBalance = evmAddressEntity.balance + addressObj.balance
           await Connection.connection.createQueryBuilder().delete().from(Address).where("id = :id", { id: Math.max(evmAddressEntity.id, addressObj.id) }).execute()
-          await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress, lastFetchEvm: now}).where("id = :id", { id:  Math.min(evmAddressEntity.id, addressObj.id) }).execute()
+          await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress, lastFetchEvm: now, balance: newBalance}).where("id = :id", { id:  Math.min(evmAddressEntity.id, addressObj.id) }).execute()
       } else {
         await Connection.connection.createQueryBuilder().update(Address).set({ evmAddress: evmAddress, lastFetchEvm: now}).where("id = :id", { id: addressObj.id }).execute()
       }
@@ -45,8 +46,9 @@ const fetchEvm = async (addressObj) => {
       console.log(`${addressObj.evmAddress} linked ${address}`)
       let addressEntity = await entityManager.findOne(Address, { where: { address: address } })
       if (addressEntity) {
+        let newBalance = addressEntity.balance + addressObj.balance
           await Connection.connection.createQueryBuilder().delete().from(Address).where("id = :id", { id: Math.max(addressEntity.id, addressObj.id) }).execute()
-          await Connection.connection.createQueryBuilder().update(Address).set({ address: address, lastFetchEvm: now}).where("id = :id", { id:  Math.min(addressEntity.id, addressObj.id) }).execute()
+          await Connection.connection.createQueryBuilder().update(Address).set({ address: address, lastFetchEvm: now, balance: newBalance}).where("id = :id", { id:  Math.min(addressEntity.id, addressObj.id) }).execute()
       } else {
         await Connection.connection.createQueryBuilder().update(Address).set({ address: address, lastFetchEvm: now}).where("id = :id", { id: addressObj.id }).execute()
       }
