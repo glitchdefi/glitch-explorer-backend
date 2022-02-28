@@ -7,6 +7,7 @@ import {
   Staking,
   Transaction,
 } from '../../databases';
+import { TransactionStatus, TransactionType } from './dto';
 
 @Injectable()
 export class AddressService {
@@ -138,15 +139,11 @@ export class AddressService {
     }
   }
 
-  async getTransactionCount(address: string, getAll: boolean): Promise<number> {
+  async getTransactionCount(address: string): Promise<number> {
     try {
-      if (getAll) {
-        return await this.transactionRepository.count({
-          where: [{ from: address }, { to: address }],
-        });
-      } else {
-        return await this.transactionRepository.count({ from: address });
-      }
+      return await this.transactionRepository.count({
+        where: [{ from: address }, { to: address }],
+      });
     } catch (error) {
       this.logger.error(error);
       throw error;
@@ -157,39 +154,99 @@ export class AddressService {
     address: string,
     pageSize: number,
     pageIndex: number,
-    getAll: boolean,
+    startDate?: Date,
+    endDate?: Date,
+    type?: TransactionType,
+    status?: TransactionStatus,
   ): Promise<any> {
     try {
-      const transactionCount = await this.getTransactionCount(address, getAll);
-      let transactions = [];
+      let countQuery = this.transactionRepository
+        .createQueryBuilder('transaction')
+        .where('TRUE');
+      let query = this.transactionRepository
+        .createQueryBuilder('transaction')
+        .leftJoinAndSelect('transaction.extrinsicIndex', 'extrinsic')
+        .leftJoinAndSelect('extrinsic.block', 'block')
+        .where('TRUE');
 
-      if (getAll) {
-        transactions = await this.transactionRepository
-          .createQueryBuilder('transaction')
-          .leftJoinAndSelect('transaction.extrinsicIndex', 'extrinsic')
-          .leftJoinAndSelect('extrinsic.block', 'block')
-          .where('transaction.from = :address OR transaction.to = :address', {
-            address,
-          })
-          .orderBy('block.index', 'DESC')
-          .addOrderBy('transaction.id', 'DESC')
-          .skip((pageIndex - 1) * pageSize)
-          .take(pageSize)
-          .getMany();
-      } else {
-        transactions = await this.transactionRepository
-          .createQueryBuilder('transaction')
-          .leftJoinAndSelect('transaction.extrinsicIndex', 'extrinsic')
-          .leftJoinAndSelect('extrinsic.block', 'block')
-          .where('transaction.from = :address', {
-            address,
-          })
-          .orderBy('block.index', 'DESC')
-          .addOrderBy('transaction.id', 'DESC')
-          .skip((pageIndex - 1) * pageSize)
-          .take(pageSize)
-          .getMany();
+      // transactions = await this.transactionRepository
+      //   .createQueryBuilder('transaction')
+      //   .leftJoinAndSelect('transaction.extrinsicIndex', 'extrinsic')
+      //   .leftJoinAndSelect('extrinsic.block', 'block')
+      //   .where('transaction.from = :address OR transaction.to = :address', {
+      //     address,
+      //   })
+      //   .orderBy('block.index', 'DESC')
+      //   .addOrderBy('transaction.id', 'DESC')
+      //   .skip((pageIndex - 1) * pageSize)
+      //   .take(pageSize)
+      //   .getMany();
+
+      if (startDate) {
+        countQuery = countQuery.andWhere('transaction.time >= :startDate', {
+          startDate: startDate,
+        });
+        query = query.andWhere('transaction.time >= :startDate', {
+          startDate: startDate,
+        });
       }
+
+      // if (endDate) {
+      //   countQuery = countQuery.andWhere('transaction.time <= :endDate', {
+      //     endDate: endDate,
+      //   });
+      //   query = query.andWhere('transaction.time <= :endDate', {
+      //     endDate: endDate,
+      //   });
+      // }
+
+      if (type === TransactionType.SEND) {
+        countQuery = countQuery.andWhere('transaction.from = :address', {
+          address,
+        });
+        query = query.andWhere('transaction.from = :address', {
+          address,
+        });
+      } else if (type === TransactionType.RECEIVE) {
+        countQuery = countQuery.andWhere('transaction.to = :address', {
+          address,
+        });
+        query = query.andWhere('transaction.to = :address', {
+          address,
+        });
+      } else {
+        countQuery = countQuery.andWhere(
+          '(transaction.from = :address OR transaction.to = :address)',
+          {
+            address,
+          },
+        );
+        query = query.andWhere(
+          '(transaction.from = :address OR transaction.to = :address)',
+          {
+            address,
+          },
+        );
+      }
+
+      if (status) {
+        countQuery = countQuery.andWhere('transaction.status <= :status', {
+          status: status,
+        });
+        query = query.andWhere('transaction.status <= :status', {
+          status: status,
+        });
+      }
+
+      query.orderBy('block.index', 'DESC').addOrderBy('transaction.id', 'DESC');
+
+      query = query.take(pageSize);
+      query = query.skip((pageIndex - 1) * pageSize);
+
+      const transactionCount = Number(
+        (await countQuery.select('COUNT(*) as count').getRawOne()).count,
+      );
+      const transactions = await query.getMany();
 
       return {
         data: transactions.map((transaction) => {

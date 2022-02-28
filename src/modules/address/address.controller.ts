@@ -7,6 +7,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from 'src/exceptions';
+import { GetTransactionListDto } from './dto';
 
 @Controller('address')
 export class AddressController {
@@ -48,10 +49,17 @@ export class AddressController {
   }
 
   @Get(':hash/tx')
-  async getTransactionList(@Param() params, @Query() query: any): Promise<any> {
+  async getTransactionList(
+    @Param() params,
+    @Query() query: GetTransactionListDto,
+  ): Promise<any> {
     const hash = params.hash;
     const pageSize = Number(query.page_size) || 15;
     const pageIndex = Number(query.page_index) || 1;
+    const startDate = query.start_date;
+    const endDate = query.end_date;
+    const type = query.type;
+    const status = query.status;
 
     if (pageSize <= 0 || pageIndex <= 0) throw new BadRequestException();
 
@@ -62,7 +70,10 @@ export class AddressController {
         hash,
         pageSize,
         pageIndex,
-        true,
+        startDate,
+        endDate,
+        type,
+        status,
       );
     } catch (error) {
       throw new InternalServerErrorException();
@@ -89,7 +100,6 @@ export class AddressController {
         hash,
         pageSize,
         pageIndex,
-        true,
       );
     } catch (error) {
       throw new InternalServerErrorException();
