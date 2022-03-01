@@ -297,8 +297,8 @@ export class AddressService {
         )
         SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count, ad.evm_address, ad.balance
         FROM added_row_number a
-          LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
           LEFT JOIN address ad ON ad.glitch_address = a.address
+          LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address OR t.from = ad.evm_address OR t.to = ad.evm_address
         WHERE a.row_number = 1
         GROUP BY a.id, a.address, a.type, a.era, ad.evm_address, ad.balance
         ORDER BY ad.balance DESC
@@ -347,8 +347,8 @@ export class AddressService {
         )
         SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count, ad.evm_address, ad.balance
         FROM added_row_number a
-          LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address
           LEFT JOIN address ad ON ad.glitch_address = a.address
+          LEFT JOIN transaction t ON t.from = a.address OR t.to = a.address OR t.from = ad.evm_address OR t.to = ad.evm_address
         WHERE a.row_number = 1
         GROUP BY a.id, a.address, a.type, a.era, ad.evm_address, ad.balance
         ORDER BY ad.balance DESC
