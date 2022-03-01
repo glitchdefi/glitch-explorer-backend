@@ -279,7 +279,7 @@ export class AddressService {
             SELECT *,
               ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
             FROM staking
-            WHERE type = ${StakingType.VALIDATOR}
+            WHERE type = ${StakingType.VALIDATOR} AND era = (SELECT MAX(era) FROM staking)
           )
           SELECT COUNT(*)
           FROM added_row_number a
@@ -291,7 +291,9 @@ export class AddressService {
           SELECT *,
             ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
           FROM staking
-          WHERE type = ${StakingType.VALIDATOR}
+          WHERE type = ${
+            StakingType.VALIDATOR
+          } AND era = (SELECT MAX(era) FROM staking)
         )
         SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count, ad.evm_address, ad.balance
         FROM added_row_number a
@@ -327,7 +329,7 @@ export class AddressService {
             SELECT *,
               ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
             FROM staking
-            WHERE type = ${StakingType.NOMINATOR}
+            WHERE type = ${StakingType.NOMINATOR} AND era = (SELECT MAX(era) FROM staking)
           )
           SELECT COUNT(*)
           FROM added_row_number a
@@ -339,7 +341,9 @@ export class AddressService {
           SELECT *,
             ROW_NUMBER() OVER(PARTITION BY address ORDER BY era DESC) AS row_number
           FROM staking
-          WHERE type = ${StakingType.NOMINATOR}
+          WHERE type = ${
+            StakingType.NOMINATOR
+          } AND era = (SELECT MAX(era) FROM staking)
         )
         SELECT a.id, a.address, a.type, a.era, count(t.id) as tx_count, ad.evm_address, ad.balance
         FROM added_row_number a
