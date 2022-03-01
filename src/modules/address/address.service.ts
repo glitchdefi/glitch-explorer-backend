@@ -169,19 +169,6 @@ export class AddressService {
         .leftJoinAndSelect('extrinsic.block', 'block')
         .where('TRUE');
 
-      // transactions = await this.transactionRepository
-      //   .createQueryBuilder('transaction')
-      //   .leftJoinAndSelect('transaction.extrinsicIndex', 'extrinsic')
-      //   .leftJoinAndSelect('extrinsic.block', 'block')
-      //   .where('transaction.from = :address OR transaction.to = :address', {
-      //     address,
-      //   })
-      //   .orderBy('block.index', 'DESC')
-      //   .addOrderBy('transaction.id', 'DESC')
-      //   .skip((pageIndex - 1) * pageSize)
-      //   .take(pageSize)
-      //   .getMany();
-
       if (startDate) {
         countQuery = countQuery.andWhere('transaction.time >= :startDate', {
           startDate: startDate,
@@ -191,14 +178,14 @@ export class AddressService {
         });
       }
 
-      // if (endDate) {
-      //   countQuery = countQuery.andWhere('transaction.time <= :endDate', {
-      //     endDate: endDate,
-      //   });
-      //   query = query.andWhere('transaction.time <= :endDate', {
-      //     endDate: endDate,
-      //   });
-      // }
+      if (endDate) {
+        countQuery = countQuery.andWhere('transaction.time <= :endDate', {
+          endDate: endDate,
+        });
+        query = query.andWhere('transaction.time <= :endDate', {
+          endDate: endDate,
+        });
+      }
 
       if (type === TransactionType.SEND) {
         countQuery = countQuery.andWhere('transaction.from = :address', {
@@ -312,6 +299,7 @@ export class AddressService {
           LEFT JOIN address ad ON ad.glitch_address = a.address
         WHERE a.row_number = 1
         GROUP BY a.id, a.address, a.type, a.era, ad.evm_address, ad.balance
+        ORDER BY ad.balance DESC
         LIMIT ${pageSize}
         OFFSET ${(pageIndex - 1) * pageSize}`,
       );
@@ -359,6 +347,7 @@ export class AddressService {
           LEFT JOIN address ad ON ad.glitch_address = a.address
         WHERE a.row_number = 1
         GROUP BY a.id, a.address, a.type, a.era, ad.evm_address, ad.balance
+        ORDER BY ad.balance DESC
         LIMIT ${pageSize}
         OFFSET ${(pageIndex - 1) * pageSize}`,
       );
