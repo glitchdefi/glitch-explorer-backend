@@ -85,7 +85,10 @@ export class AddressService {
       let txInfo = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('sum(value)', 'total_received')
-        .where('transaction.to = :address', { address })
+        .where('transaction.to = :address OR transaction.to = :evmAddress', {
+          address: account['address_glitch_address'],
+          evmAddress: account['address_evm_address'],
+        })
         .getRawOne();
 
       const total_received = txInfo.total_received || '0';
@@ -93,7 +96,13 @@ export class AddressService {
       txInfo = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('sum(value)', 'total_spend')
-        .where('transaction.from = :address', { address })
+        .where(
+          'transaction.from = :address OR transaction.from = :evmAddress',
+          {
+            address: account['address_glitch_address'],
+            evmAddress: account['address_evm_address'],
+          },
+        )
         .getRawOne();
 
       const total_spend = txInfo.total_spend || '0';
@@ -101,9 +110,13 @@ export class AddressService {
       txInfo = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('count(id)', 'total_tx')
-        .where('transaction.from = :address OR transaction.to = :address', {
-          address,
-        })
+        .where(
+          'transaction.from = :address OR transaction.to = :address OR transaction.from = :evmAddress OR transaction.to = :evmAddress',
+          {
+            address: account['address_glitch_address'],
+            evmAddress: account['address_evm_address'],
+          },
+        )
         .getRawOne();
 
       const total_tx = txInfo.total_tx || '0';
@@ -111,9 +124,13 @@ export class AddressService {
       txInfo = await this.transactionRepository
         .createQueryBuilder('transaction')
         .select('time', 'last_tx_date')
-        .where('transaction.from = :address OR transaction.to = :address', {
-          address,
-        })
+        .where(
+          'transaction.from = :address OR transaction.to = :address OR transaction.from = :evmAddress OR transaction.to = :evmAddress',
+          {
+            address: account['address_glitch_address'],
+            evmAddress: account['address_evm_address'],
+          },
+        )
         .orderBy('block_index', 'DESC')
         .getRawOne();
 
@@ -160,6 +177,12 @@ export class AddressService {
     status?: TransactionStatus,
   ): Promise<any> {
     try {
+      const account = await this.addressRepository.findOne({
+        where: [{ address: address }, { evmAddress: address }],
+      });
+
+      if (!account) return null;
+
       let countQuery = this.transactionRepository
         .createQueryBuilder('transaction')
         .where('TRUE');
@@ -188,30 +211,48 @@ export class AddressService {
       }
 
       if (type === TransactionType.SEND) {
-        countQuery = countQuery.andWhere('transaction.from = :address', {
-          address,
-        });
-        query = query.andWhere('transaction.from = :address', {
-          address,
-        });
-      } else if (type === TransactionType.RECEIVE) {
-        countQuery = countQuery.andWhere('transaction.to = :address', {
-          address,
-        });
-        query = query.andWhere('transaction.to = :address', {
-          address,
-        });
-      } else {
         countQuery = countQuery.andWhere(
-          '(transaction.from = :address OR transaction.to = :address)',
+          '(transaction.from = :address OR transaction.from = :evmAddress)',
           {
-            address,
+            address: account.address,
+            evmAddress: account.evmAddress,
           },
         );
         query = query.andWhere(
-          '(transaction.from = :address OR transaction.to = :address)',
+          '(transaction.from = :address OR transaction.from = :evmAddress)',
           {
-            address,
+            address: account.address,
+            evmAddress: account.evmAddress,
+          },
+        );
+      } else if (type === TransactionType.RECEIVE) {
+        countQuery = countQuery.andWhere(
+          '(transaction.to = :address OR transaction.to = :evmAddress)',
+          {
+            address: account.address,
+            evmAddress: account.evmAddress,
+          },
+        );
+        query = query.andWhere(
+          '(transaction.to = :address OR transaction.to = :evmAddress)',
+          {
+            address: account.address,
+            evmAddress: account.evmAddress,
+          },
+        );
+      } else {
+        countQuery = countQuery.andWhere(
+          '(transaction.from = :address OR transaction.to = :address OR transaction.from = :evmAddress OR transaction.to = :evmAddress)',
+          {
+            address: account.address,
+            evmAddress: account.evmAddress,
+          },
+        );
+        query = query.andWhere(
+          '(transaction.from = :address OR transaction.to = :address OR transaction.from = :evmAddress OR transaction.to = :evmAddress)',
+          {
+            address: account.address,
+            evmAddress: account.evmAddress,
           },
         );
       }
