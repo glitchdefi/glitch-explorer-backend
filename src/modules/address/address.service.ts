@@ -9,6 +9,9 @@ import {
 } from '../../databases';
 import { TransactionStatus, TransactionType } from './dto';
 
+const { ApiPromise, HttpProvider } = require('@polkadot/api');
+const { encodeAddress } = require('@polkadot/util-crypto');
+
 @Injectable()
 export class AddressService {
   private readonly logger = new Logger(AddressService.name);
@@ -306,6 +309,25 @@ export class AddressService {
         .getMany();
 
       return balanceHistory;
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
+  async getBalance(address: string): Promise<any> {
+    try {
+      const provider = new HttpProvider(process.env.HTTP);
+      const api = await ApiPromise.create({ provider });
+      let account = null;
+
+      try {
+        account = (await api.query.system.account(address)).toJSON();
+      } catch (error) {
+        return null;
+      }
+
+      return account?.data;
     } catch (error) {
       this.logger.error(error);
       throw error;

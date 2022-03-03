@@ -11,7 +11,8 @@ import {
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { Socket } from 'socket.io';
 import { SocketService } from './socket.service';
-import { ApiPromise, HttpProvider } from '@polkadot/api';
+
+const { ApiPromise, HttpProvider } = require('@polkadot/api');
 
 @WebSocketGateway()
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {

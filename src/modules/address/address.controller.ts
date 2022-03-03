@@ -122,6 +122,23 @@ export class AddressController {
 
     return result;
   }
+
+  @Get(':hash/balance')
+  async getBalance(@Param() params): Promise<any> {
+    const hash = params.hash;
+
+    let result: any;
+
+    try {
+      result = await this.addressService.getBalance(hash);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    if (!result) throw new BadRequestException();
+
+    return result;
+  }
 }
 
 @Controller('validator')

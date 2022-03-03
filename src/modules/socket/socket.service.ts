@@ -1,7 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Block, Transaction } from '../../databases';
-import { ApiPromise } from '@polkadot/api';
 
 @Injectable()
 export class SocketService {
@@ -69,7 +68,7 @@ export class SocketService {
     }
   }
 
-  async getFinalizedBlockNumber(api: ApiPromise): Promise<number> {
+  async getFinalizedBlockNumber(api: any): Promise<number> {
     try {
       const blockHash = (await api.rpc.chain.getFinalizedHead()).toString();
       const block = await api.rpc.chain.getBlock(blockHash);
