@@ -47,7 +47,8 @@ export class BlockController {
   async getBlock(@Query() query: any): Promise<any> {
     const height = Number(query?.height);
 
-    if (Number.isNaN(height) || height < 0) throw new BadRequestException();
+    if (query.height.startsWith('0x') || Number.isNaN(height) || height < 0)
+      throw new BadRequestException();
 
     let result: any;
 
