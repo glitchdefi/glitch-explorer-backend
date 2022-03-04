@@ -184,7 +184,12 @@ export class AddressService {
         where: [{ address: address }, { evmAddress: address }],
       });
 
-      if (!account) return null;
+      if (!account)
+        return {
+          data: [],
+          total: 0,
+          pagination: 0,
+        };
 
       let countQuery = this.transactionRepository
         .createQueryBuilder('transaction')
