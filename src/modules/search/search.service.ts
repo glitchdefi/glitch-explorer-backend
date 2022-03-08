@@ -23,7 +23,7 @@ export class SearchService {
             address: term,
           },
           {
-            evmAddress: term,
+            evmAddress: term.toLowerCase(),
           },
         ],
       });
