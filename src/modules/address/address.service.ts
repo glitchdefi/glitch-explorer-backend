@@ -187,7 +187,7 @@ export class AddressService {
       const account = await this.addressRepository
         .createQueryBuilder('address')
         .where(
-          'LOWER(address.glitch_address) = LOWER(:term) OR LOWER(address.evm_address) = LOWER(:term)',
+          'LOWER(address.glitch_address) = LOWER(:address) OR LOWER(address.evm_address) = LOWER(:address)',
           { address },
         )
         .getOne();
