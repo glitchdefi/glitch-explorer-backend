@@ -76,7 +76,7 @@ export class AddressService {
           'address.address = staking.address',
         )
         .where(
-          'address.glitch_address = :address OR address.evm_address = :address',
+          'LOWER(address.glitch_address) = LOWER(:address) OR LOWER(address.evm_address) = LOWER(:address)',
           {
             address,
           },
@@ -161,9 +161,13 @@ export class AddressService {
 
   async getTransactionCount(address: string): Promise<number> {
     try {
-      return await this.transactionRepository.count({
-        where: [{ from: address }, { to: address }],
-      });
+      return await this.transactionRepository
+        .createQueryBuilder('transaction')
+        .where(
+          'LOWER(transaction.from) = LOWER(:address) OR LOWER(transaction.to) = LOWER(:address)',
+          { address },
+        )
+        .getCount();
     } catch (error) {
       this.logger.error(error);
       throw error;
@@ -180,9 +184,13 @@ export class AddressService {
     status?: TransactionStatus,
   ): Promise<any> {
     try {
-      const account = await this.addressRepository.findOne({
-        where: [{ address: address }, { evmAddress: address }],
-      });
+      const account = await this.addressRepository
+        .createQueryBuilder('address')
+        .where(
+          'LOWER(address.glitch_address) = LOWER(:term) OR LOWER(address.evm_address) = LOWER(:term)',
+          { address },
+        )
+        .getOne();
 
       if (!account)
         return {

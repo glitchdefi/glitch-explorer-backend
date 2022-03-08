@@ -17,16 +17,13 @@ export class SearchService {
 
   async search(term: string): Promise<any> {
     try {
-      const wallets = await this.addressRepository.find({
-        where: [
-          {
-            address: term,
-          },
-          {
-            evmAddress: term.toLowerCase(),
-          },
-        ],
-      });
+      const wallets = await this.addressRepository
+        .createQueryBuilder('address')
+        .where(
+          'LOWER(address.glitch_address) = LOWER(:term) OR LOWER(address.evm_address) = LOWER(:term)',
+          { term },
+        )
+        .getMany();
 
       if (wallets.length) {
         return {
@@ -42,7 +39,7 @@ export class SearchService {
         .createQueryBuilder('transaction')
         .leftJoinAndSelect('transaction.extrinsicIndex', 'extrinsic')
         .leftJoinAndSelect('extrinsic.block', 'block')
-        .where('transaction.hash = :term', { term })
+        .where('LOWER(transaction.hash) = LOWER(:term)', { term })
         .getMany();
 
       if (transactions.length) {
