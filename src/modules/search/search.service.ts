@@ -55,7 +55,7 @@ export class SearchService {
       const height = Number.parseInt(term);
       let blocks = [];
 
-      if (term.startsWith('0x') || isNaN(height)) {
+      if (term.startsWith('0x') || !this.isNumeric(term)) {
         blocks = await this.blockRepository.find({
           hash: term,
         });
@@ -81,4 +81,7 @@ export class SearchService {
       throw error;
     }
   }
+
+  isNumeric = (value: string): boolean =>
+    !new RegExp(/[^\d]/g).test(value.trim());
 }
