@@ -8,6 +8,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AddressModule } from './modules/address/address.module';
 import { SearchModule } from './modules/search/search.module';
 import { SocketModule } from './modules/socket/socket.module';
+import { CoinModule } from './modules/coin/coin.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SocketModule } from './modules/socket/socket.module';
     AddressModule,
     SearchModule,
     SocketModule,
+    CoinModule,
   ],
   controllers: [],
   providers: [],
