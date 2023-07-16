@@ -29,7 +29,7 @@ class FetchBalance {
   async fetchEthBalance(address: string, blockNumber: any): Promise<string> {
     const api = this.api || Connection.httpApi
     const balance = await api.rpc.eth.getBalance(address, blockNumber)
-    console.log(address,blockNumber, balance.toString())
+    // console.log(address,blockNumber, balance.toString())
     return balance.toString()
   }
 }

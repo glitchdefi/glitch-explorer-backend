@@ -76,7 +76,7 @@ const fetchSummary = async () => {
     dataObjs[each.day].blockStart = each.min_index
     dataObjs[each.day].blockEnd = each.max_index
   })
-  console.log(dataObjs)
+  // console.log(dataObjs)
   await connection.createQueryBuilder().insert().into(DailySummary).values(Object.values(dataObjs))
     .orUpdate({
       conflict_target: ["time"],

@@ -22,7 +22,7 @@ const fetchOldBLock = async () => {
   });
   let lastBlockHeight = (lastBlock ? lastBlock.index : 0)
   if (lastBlockHeight === 0) {
-    console.log("---No Last Block found. Retry in 10s")
+    // console.log("---No Last Block found. Retry in 10s")
     await wait(10000)
     await fetchOldBLock()
     return
@@ -33,22 +33,22 @@ const fetchOldBLock = async () => {
   const cpuCount = process.env.MULTI_FETCH ? parseInt(process.env.MULTI_FETCH) : os.cpus().length - 1 
   const step = 100
   let start = process.env.START_FROM ? parseInt(process.env.START_FROM) : 0
-  console.log(`${os.cpus().length} Core | Start ${cpuCount} processes, fetching from ${start}, last blockHeight`, lastBlockHeight)
+  // console.log(`${os.cpus().length} Core | Start ${cpuCount} processes, fetching from ${start}, last blockHeight`, lastBlockHeight)
   for (var i = start; i < lastBlockHeight; i+=step){
     let from = i
     let to = Math.min(i + step, lastBlockHeight)
     let [blocks, count] = await entityManager.findAndCount(Block, { index: Between(from, to), txNum: MoreThan(-1) });
     let processTitle = `Process No.${spawnProcess + 1}/${cpuCount}`
     if (count > step) {
-      console.log(`${new Date().toISOString()} fetched ${count} from ${i} to  ${to}\n-----------------------------------------------------\n`)
+      // console.log(`${new Date().toISOString()} fetched ${count} from ${i} to  ${to}\n-----------------------------------------------------\n`)
       continue
     } else {
-      console.log(`${new Date().toISOString()}  Fork ${processTitle} is fetching from ${i} to  ${to}, in db ${count}`)
+      // console.log(`${new Date().toISOString()}  Fork ${processTitle} is fetching from ${i} to  ${to}, in db ${count}`)
     }
     proc = fork(ChildProcessPath, ["ts-node", i.toString(), (to).toString(), processTitle ], { execArgv: [path.resolve(__dirname, "../node_modules/ts-node/dist/bin.js")] })
     spawnProcess++
     proc.on('close', (code) => {
-      console.log(`${new Date().toISOString()} fetched from ${i} to  ${to}\n-----------------------------------------------------\n`)
+      // console.log(`${new Date().toISOString()} fetched from ${i} to  ${to}\n-----------------------------------------------------\n`)
       spawnProcess--
     });
     while (spawnProcess >= cpuCount) {
@@ -56,7 +56,7 @@ const fetchOldBLock = async () => {
     }
   }
 
-  console.log(`---Feched to last block ${lastBlockHeight}. Rerun in 100s`)
+  // console.log(`---Feched to last block ${lastBlockHeight}. Rerun in 100s`)
   await wait(100000)
   await fetchOldBLock()
 }

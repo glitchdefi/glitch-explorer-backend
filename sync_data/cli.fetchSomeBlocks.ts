@@ -8,12 +8,12 @@ const run = async (): Promise<void> => {
     const startTime = Date.now()
     for (var height = from; height <= to; height++){
       await fetchOneBlock.fetchBlock(height, true)
-      console.log(`${new Date().toISOString()} ${processName} fetched: height`, height)
+      // console.log(`${new Date().toISOString()} ${processName} fetched: height`, height)
     }
 
-    console.log(`+++++ ${new Date().toISOString()} ${processName} fetched from ${from} to ${to} in ${Date.now() - startTime} ms`)
+    // console.log(`+++++ ${new Date().toISOString()} ${processName} fetched from ${from} to ${to} in ${Date.now() - startTime} ms`)
   }
-  console.log(`${new Date().toISOString()} ${processName} From ${from} to ${to} done`)
+  // console.log(`${new Date().toISOString()} ${processName} From ${from} to ${to} done`)
   process.exit()
 }
 

@@ -33,7 +33,7 @@ const connect = async (): Promise<void> => {
 }
 const RPC = process.env.RPC || 'wss://rpc.polkadot.io'
 const HTTP = process.env.HTTP || 'https://rpc.polkadot.io'
-console.log('RPC', RPC, 'HTTP', HTTP,  `Database ${ process.env.DATABASE_HOST}:${ process.env.DATABASE_PORT}/${process.env.DATABASE_SCHEMA}/${process.env.DATABASE_USER}/`)
+// console.log('RPC', RPC, 'HTTP', HTTP,  `Database ${ process.env.DATABASE_HOST}:${ process.env.DATABASE_PORT}/${process.env.DATABASE_SCHEMA}/${process.env.DATABASE_USER}/`)
 const cloverTypes = {
   AccountInfo: {
     nonce: "Index",

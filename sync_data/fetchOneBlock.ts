@@ -384,7 +384,7 @@ class FetchOneBlock {
         // is account linked
         if (!evmAddressEntity) {
           let glitchAddress = (await api.query.evmAccounts.accounts(ethAccAdd))?.toString()
-          console.log('--glitchAddress', glitchAddress, ethAccAdd)
+          // console.log('--glitchAddress', glitchAddress, ethAccAdd)
           let isAccountLinked = !!glitchAddress
           if (isAccountLinked) {
             processedAddresses[`${glitchAddress}_${ethAccAdd}`] = { address: glitchAddress, evmAddress: ethAccAdd, created: time }
@@ -454,7 +454,7 @@ class FetchOneBlock {
 
       // console.log('--saveDB', Date.now() - startTime)
       // startTime = Date.now()
-      console.log(`${new Date().toISOString()} fetchBlock success: height ${height} txNum ${transactionDatas.length} events ${eventDatas.length} balanceHistoryDatas ${balanceHistoryDatas.length} logs ${logs.length}`);
+      // console.log(`${new Date().toISOString()} fetchBlock success: height ${height} txNum ${transactionDatas.length} events ${eventDatas.length} balanceHistoryDatas ${balanceHistoryDatas.length} logs ${logs.length}`);
     }
   }
 
@@ -476,11 +476,11 @@ class FetchOneBlock {
       await this.init()
       const block = await this.entityManager.findOne(Block, { where: { index: height, txNum: MoreThan(-1) } });
       if (block && force === false) {
-        if (process.env.LOGALL === 'true') console.log(`${new Date().toISOString()} fetchBlock fromDB success: height ${height}`);
+        // if (process.env.LOGALL === 'true') console.log(`${new Date().toISOString()} fetchBlock fromDB success: height ${height}`);
         return true;
       }
       await this._fetchOneBlock(height);
-      console.log(`${new Date().toISOString()} fetchBlock success: height ${height} in ${Date.now() - _startTime} ms`);
+      // console.log(`${new Date().toISOString()} fetchBlock success: height ${height} in ${Date.now() - _startTime} ms`);
       return true;
     } catch (error) {
       fs.appendFileSync('fetch_failed.log', `${new Date()}\height:${height}\treason:${error.message}\n`)

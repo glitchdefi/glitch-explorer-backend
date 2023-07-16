@@ -16,7 +16,7 @@ const fetch = async (addressObj) => {
   try {
     let evmAddress = (await api.query.evmAccounts.evmAddresses(addressObj.address))?.toString()
     if (evmAddress) {
-      console.log(`${addressObj.address} linked ${evmAddress}`)
+      // console.log(`${addressObj.address} linked ${evmAddress}`)
       let evmAddressEntity = await entityManager.findOne(Address, { where: { evmAddress } })
       if (evmAddressEntity) {
           let newBalance = evmAddressEntity.balance + addressObj.balance
@@ -43,7 +43,7 @@ const fetchEvm = async (addressObj) => {
   try {
     let address = (await api.query.evmAccounts.accounts(addressObj.evmAddress))?.toString()
     if (address) {
-      console.log(`${addressObj.evmAddress} linked ${address}`)
+      // console.log(`${addressObj.evmAddress} linked ${address}`)
       let addressEntity = await entityManager.findOne(Address, { where: { address: address } })
       if (addressEntity) {
         let newBalance = addressEntity.balance + addressObj.balance
@@ -68,12 +68,12 @@ const fetchEvmAddress = async () => {
   let oneHourAgo = new Date()
   // oneHourAgo.setHours(oneHourAgo.getHours() - 1)
   const rows = await entityManager.find(Address, { where: { evmAddress: IsNull(), lastFetchEvm: LessThan(oneHourAgo) }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
-  console.log("Find:", rows.length, "addresses")
+  // console.log("Find:", rows.length, "addresses")
   let funcs = rows.map(each => fetch(each))
   await Promise.all(funcs)
 
   const evmRows = await entityManager.find(Address, { where: { address: IsNull(), lastFetchEvm: LessThan(oneHourAgo) }, order: { lastFetchEvm: "ASC", }, take: THRESHOLD });
-  console.log("Find:", evmRows.length, " evm addresses")
+  // console.log("Find:", evmRows.length, " evm addresses")
   funcs = evmRows.map(each => fetchEvm(each))
   await Promise.all(funcs)
 

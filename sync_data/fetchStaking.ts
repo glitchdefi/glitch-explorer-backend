@@ -62,7 +62,7 @@ class FetchStaking {
         })
       })
       resultNominators.forEach(nominator => {
-        console.log(nominator)
+        // console.log(nominator)
         insertData.push({
           address: nominator.address.toString(),
           type: 1,

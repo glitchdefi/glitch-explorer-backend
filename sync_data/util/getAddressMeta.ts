@@ -9,7 +9,7 @@ export default function getAddressMeta (address: string, type: KeyringItemType |
   let meta: KeyringJson$Meta | undefined;
 
   try {
-    console.log(keyring)
+    // console.log(keyring)
     const pair = keyring.getAddress(address, type);
 
     meta = pair && pair.meta;
