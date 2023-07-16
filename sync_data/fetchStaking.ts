@@ -1,5 +1,5 @@
 import { encodeAddress } from '@polkadot/util-crypto';
-import { NominatorValidator, Staking } from '../src/databases';
+import { NominatorValidator, Staking, BalanceHistory } from '../src/databases';
 import Connection from './connection';
 require('dotenv').config()
 
@@ -14,6 +14,9 @@ class FetchStaking {
   async fetchStaking(blockNumber): Promise<void> {
     try {
       let api = Connection.api
+      const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+      const time = new Date(Number(await api.query.timestamp.now.at(blockHash)))
+
       if (!this.epochDuration) {
         this.epochDuration = (api.consts.babe.epochDuration).toNumber()
         this.sessionsPerEra = api.consts.staking.sessionsPerEra.toNumber()
@@ -54,11 +57,20 @@ class FetchStaking {
       let insertData = []
       //relationship
       let relationshipData = []
+      let balanceHistoryData = []
       validators.validators.forEach(validator => {
         insertData.push({
           address: validator.toString(),
           type: 0,
           era: era
+        })
+        balanceHistoryData.push({
+          address: validator.toString(),
+          balance: '-1',
+          blockIndex: blockNumber,
+          time: time,
+          fetchStatus: 0,
+          headerHash: blockHash.toString().substring(2)
         })
       })
       resultNominators.forEach(nominator => {
@@ -67,6 +79,14 @@ class FetchStaking {
           address: nominator.address.toString(),
           type: 1,
           era: era
+        })
+        balanceHistoryData.push({
+          address: nominator.address.toString(),
+          balance: '-1',
+          blockIndex: blockNumber,
+          time: time,
+          fetchStatus: 0,
+          headerHash: blockHash.toString().substring(2)
         })
         nominator.validators.forEach(validator => {
           relationshipData.push({
@@ -79,6 +99,7 @@ class FetchStaking {
       })
       await Connection.connection.createQueryBuilder().insert().into(Staking).values(insertData).execute()
       await Connection.connection.createQueryBuilder().insert().into(NominatorValidator).values(relationshipData).execute()
+      await Connection.connection.createQueryBuilder().insert().into(BalanceHistory).values(balanceHistoryData).execute()
       
     } catch (error) {
       console.log(error) 

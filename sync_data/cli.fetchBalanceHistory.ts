@@ -40,7 +40,16 @@ const fetchBalanceHistory = async () => {
         await Connection.connection.createQueryBuilder().update(Address).set({ balance: balance.toString(), lastBlockIndex:  balanceHistory.blockIndex}).where("evmAddress = :address", { address: balanceHistory.address }).execute()
       } else {
         balance = await fetchBalance.fetchBalance(balanceHistory.address, headerHash)
-        await Connection.connection.createQueryBuilder().update(Address).set({ balance: balance.toString(), lastBlockIndex:  balanceHistory.blockIndex}).where("address = :address", { address: balanceHistory.address }).execute()
+        // await Connection.connection.createQueryBuilder().update(Address).set({ balance: balance.toString(), lastBlockIndex:  balanceHistory.blockIndex}).where("address = :address", { address: balanceHistory.address }).execute()
+        await Connection.connection
+          .createQueryBuilder()
+          .insert()
+          .into(Address)
+          .values([
+            { address: balanceHistory.address, balance: balance.toString(), lastBlockIndex:  balanceHistory.blockIndex }
+          ])
+          .orUpdate({ conflict_target: ['glitch_address'], overwrite: ['balance', 'last_block_index'] })
+          .execute()
       }
       await Connection.connection.createQueryBuilder().update(BalanceHistory).set({ balance: balance.toString(), fetchStatus: 1 }).where("id = :id", { id: balanceHistory.id }).execute()
     } catch (error) {

@@ -137,7 +137,7 @@ export class AddressService {
         .orderBy('block_index', 'DESC')
         .getRawOne();
 
-      const last_tx_date = txInfo.last_tx_date;
+      const last_tx_date = txInfo ? txInfo.last_tx_date : null;
 
       return {
         id: account['address_id'],
