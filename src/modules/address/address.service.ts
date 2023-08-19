@@ -8,6 +8,8 @@ import {
   Transaction,
 } from '../../databases';
 import { TransactionStatus, TransactionType } from './dto';
+import { Keyring } from '@polkadot/api';
+import { base58Encode, blake2AsHex, blake2AsU8a } from '@polkadot/util-crypto';
 
 const { ApiPromise, HttpProvider } = require('@polkadot/api');
 const { encodeAddress } = require('@polkadot/util-crypto');
@@ -336,6 +338,14 @@ export class AddressService {
 
       try {
         account = (await api.query.system.account(address)).toJSON();
+        console.log(
+          new Keyring()
+            .encodeAddress(
+              '5DDFXC82XM7Cf8UWqwwS91tbshb1o88Gyyz1GTuidCdNsRqe',
+              40,
+            )
+            .toLowerCase(),
+        );
       } catch (error) {
         return null;
       }
@@ -491,6 +501,43 @@ export class AddressService {
       this.logger.error(error);
       throw error;
     }
+  }
+
+  private primaryKeyToGlitchAddress(primaryKey: string): string {
+    const prefixHex = '2A';
+    const primaryKeyBuffer = Buffer.concat([
+      Buffer.from(prefixHex, 'hex'),
+      Buffer.from(primaryKey, 'hex'),
+    ]);
+
+    const hashInput = Buffer.concat([Buffer.from('SS58PRE'), primaryKeyBuffer]);
+    const hash = blake2AsU8a(hashInput, 512);
+    const bytes = Buffer.concat([primaryKeyBuffer, hash.slice(0, 2)]);
+
+    return base58Encode(bytes);
+  }
+
+  async ethereumAddressToGlitch(ethAddress: string): Promise<string> {
+    const minLength = 40;
+    // evn: in hex
+    const prefix = '65766d3a';
+
+    if (!ethAddress.startsWith('0x')) {
+      throw new Error('Ethereum address must start with 0x');
+    }
+
+    ethAddress = ethAddress.slice(2);
+
+    if (ethAddress.length < minLength) {
+      throw new Error('Invalid Ethereum address length');
+    }
+
+    ethAddress = `${prefix}${ethAddress}`;
+
+    // Pad to 64 characters with zeros
+    ethAddress = ethAddress.padEnd(64, '0');
+
+    return this.primaryKeyToGlitchAddress(ethAddress);
   }
 }
 

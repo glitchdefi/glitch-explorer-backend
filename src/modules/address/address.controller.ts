@@ -139,6 +139,26 @@ export class AddressController {
 
     return result;
   }
+
+  @Get('/evm/:hash/balance')
+  async getBalanceTest(@Param() params): Promise<string> {
+    const hash = params.hash;
+
+    let result: any;
+
+    try {
+      const glitchAddress = await this.addressService.ethereumAddressToGlitch(
+        hash,
+      );
+      result = await this.addressService.getBalance(glitchAddress);
+    } catch (error) {
+      throw new InternalServerErrorException();
+    }
+
+    if (!result) throw new BadRequestException();
+
+    return result;
+  }
 }
 
 @Controller('validator')
