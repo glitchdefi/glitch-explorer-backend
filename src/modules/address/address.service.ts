@@ -9,7 +9,9 @@ import {
 } from '../../databases';
 import { TransactionStatus, TransactionType } from './dto';
 import { Keyring } from '@polkadot/api';
-import { base58Encode, blake2AsHex, blake2AsU8a } from '@polkadot/util-crypto';
+import { base58Encode, blake2AsU8a } from '@polkadot/util-crypto';
+import { FrameSystemAccountInfo } from '@polkadot/types/lookup';
+import { U256 } from '@polkadot/types';
 
 const { ApiPromise, HttpProvider } = require('@polkadot/api');
 const { encodeAddress } = require('@polkadot/util-crypto');
@@ -330,14 +332,28 @@ export class AddressService {
     }
   }
 
+  async getEvmBalance(address: string): Promise<any> {
+    try {
+      const provider = new HttpProvider(process.env.HTTP);
+      const api = await ApiPromise.create({ provider });
+
+      const balance = await api.rpc.eth.getBalance(address);
+      return { balance };
+    } catch (error) {
+      this.logger.error(error);
+      throw error;
+    }
+  }
+
   async getBalance(address: string): Promise<any> {
     try {
       const provider = new HttpProvider(process.env.HTTP);
       const api = await ApiPromise.create({ provider });
-      let account = null;
 
       try {
-        account = (await api.query.system.account(address)).toJSON();
+        const balance: FrameSystemAccountInfo = await api.query.system.account(
+          address,
+        );
         console.log(
           new Keyring()
             .encodeAddress(
@@ -346,11 +362,10 @@ export class AddressService {
             )
             .toLowerCase(),
         );
+        return balance;
       } catch (error) {
         return null;
       }
-
-      return account?.data;
     } catch (error) {
       this.logger.error(error);
       throw error;

@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from 'src/exceptions';
 import { GetTransactionListDto } from './dto';
+import { ethers } from 'ethers';
 
 @Controller('address')
 export class AddressController {
@@ -147,10 +148,7 @@ export class AddressController {
     let result: any;
 
     try {
-      const glitchAddress = await this.addressService.ethereumAddressToGlitch(
-        hash,
-      );
-      result = await this.addressService.getBalance(glitchAddress);
+      result = await this.addressService.getEvmBalance(hash);
     } catch (error) {
       throw new InternalServerErrorException();
     }
